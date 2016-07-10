@@ -2,30 +2,35 @@
 # -----------------------------------------------------------
 
 loglike <- function(theta, 
+                    acv.model,
                     tau = NULL, 
-                    dat, 
+                    dat = NULL, 
                     PDcheck = TRUE,
                     chatter = 0) {
   
   # -----------------------------------------------------------
   # loglike
   # Inputs: 
-  #   theta - vector of parameters for covariance function
-  #            the first element is the mean value mu
-  #   tau   - N*N array of lags at which to compute ACF
-  #   dat   - an n * 3 data frame/array, 3 columns
-  #            give the times, measurement and errors of
-  #            the n data points.
+  #   theta     - vector of parameters for covariance function
+  #                the first element is the mean value mu
+  #   acv.model - name of the function to compute ACV(tau|theta)
+  #   tau       - N*N array of lags at which to compute ACF
+  #   dat       - an n * 3 data frame/array, 3 columns
+  #                give the times, measurement and errors of
+  #                the n data points.
+  #   PDcheck   - TRUE/FALSE use Matrix::nearPD to coerse the matrix
+  #                C to be positive definite
+  #   chatter   - higher values give more run-time feedback
   #
   # Value:
-  #  logl - value of log[likelihood(theta)]
+  #  logl       - value of log[likelihood(theta)]
   #
   # Description:
   #  Compute the log-likelihood for model parameters theta given data {t, y, dy}
   #  and an (optional) n*N matrix of lags, tau. See algorithm 2.1 of Rasmussen &
-  #  Williams (2006). The input data frame 'dat' should contain three columns:
-  #  t, y, dy. t[i] and y[i] give the times and the measured values of those
-  #  times. dy gives the 'error' on the measurements y, assumed to be
+  #  Williams (2006). The input data frame 'dat' should contain three columns: 
+  #  t, y, dy. t[i] and y[i] give the times and the measured values of those 
+  #  times. dy gives the 'error' on the measurements y, assumed to be 
   #  independent Gaussian errors wih standard deviation dy. If dy is not present
   #  we assumine dy[i] = 0 for all i. The columns t, y, and dy are all n-element
   #  vectors.
@@ -70,9 +75,11 @@ loglike <- function(theta,
   # check arguments
   if (missing(theta)) {stop('** Missing theta input.')}
   if (!all(is.finite(theta))) {stop('** Non-finite values in theta.')}
-  if (!exists('dat')) {stop('** Missing dat.')}
+  if (is.null(dat)) {stop('** Missing dat.')}
   if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
   if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
+  if (missing(acv.model)) stop('Must specify name of ACV function')
+  if (!exists('acv.model')) stop('The specified ACV function does not exist.')
   
   # length of data vector(s)  
   n <- length(dat$y)
@@ -107,7 +114,7 @@ loglike <- function(theta,
   
   # compute the covariance matrix C as C[i,j] = ACV(tau[i,j])
   # using the remaining parameters
-  C <- acv(theta, tau)
+  C <- acv.model(theta, tau)
   
   # check there aren't any non-finite values. If there are then we set the log
   # likelihood to = -Inf.
@@ -206,7 +213,8 @@ matrix.tau <- function(t.i, t.j) {
 # optimise the deviance (-2*log[likelihood])
 
 fit.gp <- function(theta.0, 
-                   dat, 
+                   acv.model,
+                   dat = NULL, 
                    method="Nelder-Mead", 
                    trace=0, 
                    theta.scale=NULL,
@@ -218,6 +226,7 @@ fit.gp <- function(theta.0,
   # fig.gp
   # Inputs: 
   #   theta  - vector of (hyper-)parameters for ACV/PSD
+  #   acv.model - name of the function to compute ACV(tau|theta)
   #   dat    - 3 column data frame (or list) containing
   #     t    - vector of n observation times
   #     y    - vector of n observations
@@ -226,6 +235,10 @@ fit.gp <- function(theta.0,
   #   theta.scale - vector of rescaling values for the 
   #                 parameters these. optim() will fit
   #                 theta.0/theta.scale.
+  #   maxit  - max number of interations, passed to optim()
+  #   PDcheck   - TRUE/FALSE use Matrix::nearPD to coerse the matrix
+  #                C to be positive definite (passed to loglike)
+  #   chatter   - higher values give more run-time feedback
   #
   # Value:
   #  outp - list of parameters (par) and their errors (err)
@@ -245,11 +258,13 @@ fit.gp <- function(theta.0,
   # check arguments
   if (missing(theta.0)) {stop('** Missing theta.0 input.')}
   if (!all(is.finite(theta.0))) {stop('** Non-finite values in theta.')}
-  if (!exists('dat')) {stop('** Missing dat.')}
+  if (is.null(dat)) {stop('** Missing dat.')}
   if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
   if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
   if (is.null(theta.scale)) { theta.scale <- rep(1, length(theta.0)) }
-
+  if (missing(acv.model)) stop('Must specify name of ACV function')
+  if (!exists('acv.model')) stop('The specified ACV function does not exist.')
+  
   # no. parameters?
   n.parm <- length(theta.0)
   
@@ -258,7 +273,8 @@ fit.gp <- function(theta.0,
   tau <- matrix.tau(dat$t)
   
   # check the initial position
-  loglike.0 <- loglike(theta.0, tau = tau, dat = dat)
+  loglike.0 <- loglike(theta.0, tau = tau, dat = dat, 
+                       acv.model = acv.model)
   if (!is.finite(loglike.0)) {
     stop('Non-finite log likelihood for initial theta value.')
   }
@@ -270,6 +286,7 @@ fit.gp <- function(theta.0,
                   tau = tau, 
                   dat = dat,
                   PDcheck = PDcheck,
+                  acv.model = acv.model,
                   hessian=TRUE,
                   control=list(fnscale = -abs(loglike.0), 
                                trace = trace, 
@@ -297,7 +314,8 @@ fit.gp <- function(theta.0,
   }
   
   # return the parameter values and their errors
-  outp <- list(par = result$par, err = err)
+  outp <- list(par = result$par, err = err, 
+               acv.model = deparse(substitute(acv.model)))
   return(outp)  
 }
 
@@ -305,7 +323,8 @@ fit.gp <- function(theta.0,
 # Predict the mean of the Gaussian Process 
 
 predict.gp <- function(theta, 
-                       dat, 
+                       acv.model,
+                       dat = NULL, 
                        t.star = NULL,
                        PDcheck = FALSE) {
   
@@ -313,11 +332,14 @@ predict.gp <- function(theta,
   # predict.gp
   # Inputs: 
   #   theta - vector of (hyper-)parameters for ACV/PSD
+  #   acv.model - name of the function to compute ACV(tau|theta)
   #   dat    - 3 column data frame (or list) containing
   #     t    - vector of n observation times
   #     y    - vector of n observations
   #     dy   - vector of n 'errors' on observations
   #  t.star  - vector of m times at which to predict 
+  #   PDcheck - TRUE/FALSE use Matrix::nearPD to coerse the matrix
+  #                C to be positive definite 
   #
   # Value:
   #  result - list containing
@@ -341,10 +363,10 @@ predict.gp <- function(theta,
   # if we have 
   #  t.obs - times at observations
   #  t.star  - times at predictions
-  #  K     - ACF(t.obs, t.obs)
-  #  K.ik  - ACF(t.obs, t.star)
-  #  K.ki  - ACF(t.star, t.obs)
-  #  K.kk  - ACF(t.star, t.star)
+  #  K     - ACV(t.obs, t.obs)
+  #  K.ik  - ACV(t.obs, t.star)
+  #  K.ki  - ACV(t.star, t.obs)
+  #  K.kk  - ACV(t.star, t.star)
   #
   # History:
   #  16/12/13 - v0.1 - First working version
@@ -356,9 +378,11 @@ predict.gp <- function(theta,
   # check arguments
   if (missing(theta)) {stop('** Missing theta argument.')}
   if (!all(is.finite(theta))) {stop('** Non-finite values in theta.')}
-  if (!exists('dat')) {stop('** Missing dat.')}
+  if (is.null(dat)) {stop('** Missing dat.')}
   if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
   if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
+  if (missing(acv.model)) stop('Must specify name of ACV function')
+  if (!exists('acv.model')) stop('The specified ACV function does not exist.')
   
   # if times of predictions are not given, use times of the observations
   if (is.null(t.star)) { t.star <- dat$t }
@@ -374,13 +398,13 @@ predict.gp <- function(theta,
 
   # compute model covariance matrix at observed delays
   tau.obs <- matrix.tau(dat$t, dat$t)
-  K <- acv(theta, tau.obs)
+  K <- acv.model(theta, tau.obs)
   
   # compute matrix of covariances between observations and predictions
   tau.ki <- matrix.tau(t.star, dat$t)
   tau.kk <- matrix.tau(t.star, t.star)
-  K.ki <- acv(theta, tau.ki)
-  K.kk <- acv(theta, tau.kk)
+  K.ki <- acv.model(theta, tau.ki)
+  K.kk <- acv.model(theta, tau.kk)
   
   # clean up memory
   rm(tau.obs, tau.ki, tau.kk)
@@ -407,11 +431,9 @@ predict.gp <- function(theta,
       warning('** nearPD failed to converge.')
     }
     cov.star <- pd$mat
+    cov.star <- as.matrix(cov.star)
     rm(pd)
   }
-  
-  # coerce into type 'matrix' for use with RMNORM function
-  cov.star <- matrix(cov.star, nrow=length(t.star))
   
   # Extract the diagonal elements from the covariance matrix, i.e. the variances
   # at times t.star. Store this as a vector. Use the absolute value to avoid any
@@ -427,7 +449,8 @@ predict.gp <- function(theta,
 # generate a random GP realisation
 
 sim.gp <- function(theta, 
-                   dat, 
+                   acv.model,
+                   dat = NULL, 
                    t.star = NULL, 
                    N.sim = 1, 
                    plot = FALSE) {
@@ -436,6 +459,7 @@ sim.gp <- function(theta,
   # sim.gp
   # Inputs: 
   #  theta   - vector of (hyper-)parameters for ACV/PSD
+  #  acv.model - name of the function to compute ACV(tau|theta)
   #  dat     - 3 column data frame (or list) containing
   #     t    - vector of n observation times
   #     y    - vector of n observations
@@ -455,9 +479,15 @@ sim.gp <- function(theta,
   #   y.sim ~ N(mean = y.star, cov = C)
   # 
   # Uses the function rmvnorm from the mvtnorm package to generate m-dimensional
-  # Gaussian vectors. The mean values at times t.star, y[t.star] and covariance
-  # matrix C for lags tau[i,j] = |t.star[j] - t.star[i]| are generated by the 
-  # GP.starEDICT function.
+  # Gaussian vectors.
+  # 
+  # If dat is supplied (a data frame/list containing t and y) then the
+  # conditional mean values at times t.star, y[t.star] and covariance matrix C
+  # for lags tau[i,j] = |t.star[j] - t.star[i]| are generated by the gp.predict
+  # function.
+  # 
+  # If dat is not supplied we sample from the 'prior' GP, i.e. assume mean =
+  # theta[1] and covariance matrix given by acv.model and theta parameters.
   #
   # History:
   #  17/12/13 - v0.1 - First working version
@@ -469,19 +499,37 @@ sim.gp <- function(theta,
   # check arguments
   if (missing(theta)) {stop('** Missing theta argument.')}
   if (!all(is.finite(theta))) {stop('** Non-finite values in theta.')}
-  if (!exists('dat')) {stop('** Missing dat.')}
-  if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
-  if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
+  if (is.null(dat)) { 
+    prior.sim <- TRUE
+  } else {
+    prior.sim <- FALSE
+    if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
+    if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
+    n <- length(dat$y)
+  }
+  if (missing(acv.model)) stop('Must specify name of ACV function')
+  if (!exists('acv.model')) stop('The specified ACV function does not exist.')
   
   # if times of predictions are not given, use times of the observations
-  if (is.null(t.star)) { t.star <- dat$t }
+  if (is.null(t.star)) { 
+    if (is.null(dat)) {
+      stop('** Must specify dat and/or t.star.')
+    }
+    t.star <- dat$t 
+  }
   
-  # length of input data, and simulated data
-  n <- length(dat$y)
+  # length of data to predict/simulated
   m <- length(t.star)
 
+  if (prior.sim == FALSE) {
   # compute the mean and covariance matrix for the GP at times t.star
-  gp.out <- predict.gp(theta, dat, t.star)
+    gp.out <- predict.gp(theta, acv.model, dat, t.star)
+  } else {
+    tau.kk <- matrix.tau(t.star, t.star)
+    gp.out <- list(y = rep(theta[1], m), 
+                   cov = acv.model(theta[-c(1,2)], tau.kk))
+    rm(tau.kk)
+  }
   
   # compute each time series, an m-vector drawn from the
   # multivariate (m-dimensional) Gaussian distribution.

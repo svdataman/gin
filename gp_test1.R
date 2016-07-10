@@ -6,6 +6,13 @@ acv <- function(theta, tau) {
   return(acov)
 }
 
+acv2 <- function(theta, tau) {
+  A <- abs(theta[1])
+  l <- abs(theta[2])
+  acov <- A * exp(-(tau / l)^2)
+  return(acov)
+}
+
 # --------------------------------------
 # set.seed(733765)
 
@@ -17,7 +24,7 @@ t <- seq(-0.5, 1.5, length = m)
 theta <- c(1.0, 0.2)
 mu <- array(0, dim = m) # set all means to zero
 tau <- matrix.tau(t) # compute |t_j - t_i|
-S <- acv(theta, tau) # acf(tau)
+S <- acv2(theta, tau) # acf(tau)
 diag(S) <- diag(S) + 0.001
 
 # produce Gaussian vector
@@ -32,7 +39,7 @@ plot(t, y, bty = "n", xlab = "time", ylab = "y",
 # now select only a subset of random times to make
 # observations
 
-n <- 30
+n <- 50
 indx <- sample(251:750, size = n)
 indx <- sort(indx)
 
@@ -76,13 +83,13 @@ theta <- c(0.0, 1.0, 1.0, 0.2)
 #l <- loglike(theta, dat = dat)
 
 theta <- c(0, 1.0, 1.0, 0.3)
-result <- fit.gp(theta, dat = dat, 
+result <- fit.gp(theta, acv, dat = dat, 
                  method = "Nelder-Mead", 
                  maxit = 1000, chatter=1)
 
 result$par[2:4] <- abs(result$par[2:4]) 
 
-gp <- predict.gp(result$par, dat, t.star)
+gp <- predict.gp(result$par, acv, dat, t.star)
 plot.snake(gp, add = TRUE, col.line = "blue", 
            col.snake = col.b, sigma = 2)
 
