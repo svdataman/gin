@@ -212,18 +212,17 @@ matrix.tau <- function(t.i, t.j) {
 # -----------------------------------------------------------
 # optimise the deviance (-2*log[likelihood])
 
-fit.gp <- function(theta.0, 
+gp.fit <- function(theta.0, 
                    acv.model,
                    dat = NULL, 
-                   method="Nelder-Mead", 
-                   trace=0, 
-                   theta.scale=NULL,
+                   method = "Nelder-Mead", 
+                   trace = 0, 
+                   theta.scale = NULL,
                    maxit = 5E3,
                    chatter = 0,
                    PDcheck = FALSE) {
   
   # -----------------------------------------------------------
-  # fig.gp
   # Inputs: 
   #   theta  - vector of (hyper-)parameters for ACV/PSD
   #   acv.model - name of the function to compute ACV(tau|theta)
@@ -241,7 +240,10 @@ fit.gp <- function(theta.0,
   #   chatter   - higher values give more run-time feedback
   #
   # Value:
-  #  outp - list of parameters (par) and their errors (err)
+  #  a list containing
+  #   par       - parameter values (maximum likelihood estimates)
+  #   err       - std. dev. of MLEs (based on Hessian matrix)
+  #   acv.model - name of function used to compute ACV
   #
   # Description:
   #  Find the Maximum Likelihood Estimates (MLEs) for the
@@ -306,6 +308,7 @@ fit.gp <- function(theta.0,
     err <- array(NA, dim = n.parm)
   }
 
+  # output the MLEs to screen.
   if (chatter > 0) {  
     for (i in 1:n.parm) {
       cat('-- Parameter ', i, ': ', signif(result$par[i], 4), ' +/- ', 
@@ -322,14 +325,14 @@ fit.gp <- function(theta.0,
 # -----------------------------------------------------------
 # Predict the mean of the Gaussian Process 
 
-predict.gp <- function(theta, 
+gp.predict <- function(theta, 
                        acv.model,
                        dat = NULL, 
                        t.star = NULL,
                        PDcheck = FALSE) {
   
   # -----------------------------------------------------------
-  # predict.gp
+  # gp.predict
   # Inputs: 
   #   theta - vector of (hyper-)parameters for ACV/PSD
   #   acv.model - name of the function to compute ACV(tau|theta)
@@ -448,7 +451,7 @@ predict.gp <- function(theta,
 # -----------------------------------------------------------
 # generate a random GP realisation
 
-sim.gp <- function(theta, 
+gp.sim <- function(theta, 
                    acv.model,
                    dat = NULL, 
                    t.star = NULL, 
@@ -456,7 +459,7 @@ sim.gp <- function(theta,
                    plot = FALSE) {
 
   # -----------------------------------------------------------
-  # sim.gp
+  # gp.sim
   # Inputs: 
   #  theta   - vector of (hyper-)parameters for ACV/PSD
   #  acv.model - name of the function to compute ACV(tau|theta)
@@ -523,7 +526,7 @@ sim.gp <- function(theta,
 
   if (prior.sim == FALSE) {
   # compute the mean and covariance matrix for the GP at times t.star
-    gp.out <- predict.gp(theta, acv.model, dat, t.star)
+    gp.out <- gp.predict(theta, acv.model, dat, t.star)
   } else {
     tau.kk <- matrix.tau(t.star, t.star)
     gp.out <- list(y = rep(theta[1], m), 
