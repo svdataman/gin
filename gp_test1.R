@@ -21,7 +21,7 @@ m <- 1000
 t <- seq(-0.5, 1.5, length = m)
 
 # define parameters of ACV
-theta <- c(1.0, 0.2)
+theta <- c(1.0, 0.1)
 mu <- array(0, dim = m) # set all means to zero
 tau <- matrix.tau(t) # compute |t_j - t_i|
 S <- acv(theta, tau) # acf(tau)
@@ -39,7 +39,7 @@ plot(t, y, bty = "n", xlab = "time", ylab = "y",
 # now select only a subset of random times to make
 # observations
 
-n <- 50
+n <- 100
 indx <- sample(251:750, size = n)
 indx <- sort(indx)
 
@@ -47,7 +47,7 @@ t <- t[indx]
 y <- y[indx]
 
 # now add measurement errors
-dy <- rep(0.1, n)
+dy <- rep(0.05, n)
 y <- y + rnorm(n, mean = 0, sd = dy)
 
 # plot the observations
@@ -83,13 +83,13 @@ theta <- c(0.0, 1.0, 1.0, 0.2)
 #l <- loglike(theta, dat = dat)
 
 theta <- c(0, 1.0, 1.0, 0.3)
-result <- gp.fit(theta, acv, dat = dat, 
+result <- gp.fit(theta, acv.model = acv, dat = dat, 
                  method = "Nelder-Mead", 
                  maxit = 1000, chatter=1)
 
 result$par[2:4] <- abs(result$par[2:4]) 
 
-gp <- gp.predict(result$par, acv, dat, t.star)
+gp <- gp.predict(result$par, acv.model = acv, dat, t.star)
 plot.snake(gp, add = TRUE, col.line = "blue", 
            col.snake = col.b, sigma = 2)
 
@@ -98,3 +98,22 @@ points(t, y, pch = 16, cex = 1.5)
 
 # plot error bars
 segments(t, y-dy, t, y+dy)
+
+source('~/R/tonic/gwmcmc.R')
+source('~/R/tonic/plot_contour.R')
+source('~/R/tonic/diagnostics.R')
+
+LogPrior <- function(theta) {
+  mu.d <- dnorm(theta[1], sd = 5, log = TRUE)
+  nu.d <- dlnorm(theta[2], meanlog = 0, sdlog = 1, log = TRUE)
+  A.d <- dlnorm(theta[3], meanlog = 0, sdlog = 1, log = TRUE)
+  l.d <- dlnorm(theta[4], meanlog = 0, sdlog = 1, log = TRUE)
+  return(mu.d <- nu.d + A.d + l.d)
+}
+
+chain <- gw.mcmc(LogPosterior, c(0.9, 1.9, 0.5, 0.1), acv.model = acv, 
+                 dat = dat, burn.in = 1e4, nwalkers=20, nsteps = 1e4, chatter=1)
+colnames(chain$theta) <- c("mu", "nu", "A", "l")
+cont.pairs(chain$theta)
+mcmc.diag.plot(chain)
+

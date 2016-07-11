@@ -2,7 +2,7 @@
 # -----------------------------------------------------------
 
 LogLike <- function(theta, 
-                    acv.model,
+                    acv.model = NULL,
                     tau = NULL, 
                     dat = NULL, 
                     PDcheck = TRUE,
@@ -162,7 +162,7 @@ LogLike <- function(theta,
 # -----------------------------------------------------------
 
 LogPosterior <- function(theta, 
-                         acv.model,
+                         acv.model = NULL,
                          tau = NULL, 
                          dat = NULL, 
                          PDcheck = TRUE,
@@ -255,7 +255,7 @@ matrix.tau <- function(t.i, t.j) {
 # optimise the deviance (-2*log[likelihood])
 
 gp.fit <- function(theta.0, 
-                   acv.model,
+                   acv.model = NULL,
                    dat = NULL, 
                    method = "Nelder-Mead", 
                    trace = 0, 
@@ -374,7 +374,7 @@ gp.fit <- function(theta.0,
 # Predict the mean of the Gaussian Process 
 
 gp.predict <- function(theta, 
-                       acv.model,
+                       acv.model = NULL,
                        dat = NULL, 
                        t.star = NULL,
                        PDcheck = FALSE) {
@@ -500,7 +500,7 @@ gp.predict <- function(theta,
 # generate a random GP realisation
 
 gp.sim <- function(theta, 
-                   acv.model,
+                   acv.model = NULL,
                    dat = NULL, 
                    t.star = NULL, 
                    N.sim = 1, 
