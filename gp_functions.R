@@ -1,7 +1,7 @@
 
 # -----------------------------------------------------------
 
-loglike <- function(theta, 
+LogLike <- function(theta, 
                     acv.model,
                     tau = NULL, 
                     dat = NULL, 
@@ -9,7 +9,7 @@ loglike <- function(theta,
                     chatter = 0) {
   
   # -----------------------------------------------------------
-  # loglike
+  # LogLike
   # Inputs: 
   #   theta     - vector of parameters for covariance function
   #                the first element is the mean value mu
@@ -154,9 +154,51 @@ loglike <- function(theta,
   l.3 <- -0.5 * (z %*% z)[1]
   
   # combine all three terms for give the log[likelihood]
-  loglike <- l.1 + l.2 + l.3
-  if (chatter > 1) { cat(' ', loglike, fill = TRUE) }
-  return(loglike) 
+  llike <- l.1 + l.2 + l.3
+  if (chatter > 1) { cat(' ', llike, fill = TRUE) }
+  return(llike) 
+}
+
+# -----------------------------------------------------------
+
+LogPosterior <- function(theta, 
+                         acv.model,
+                         tau = NULL, 
+                         dat = NULL, 
+                         PDcheck = TRUE,
+                         chatter = 0) {
+  
+  # check arguments
+  if (missing(theta)) {stop('** Missing theta input.')}
+  if (!all(is.finite(theta))) {stop('** Non-finite values in theta.')}
+  if (is.null(dat)) {stop('** Missing dat.')}
+  if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
+  if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
+  if (missing(acv.model)) stop('Must specify name of ACV function')
+  if (!exists('acv.model')) stop('The specified ACV function does not exist.')
+  
+  if (!exists('LogLike')) stop('The LogLike function does not exist.')
+  if (!exists('LogPrior')) LogPrior <- NULL
+  
+  # compute prior
+  if (is.null(LogPrior)) {
+    lprior <- 0
+  } else {
+    lprior <- LogPrior(theta)
+  }
+  
+  # check if prior = 0; if so, no need to compuite LogLike
+  if (lprior == -Inf) {
+    llike <- 0
+  } else {
+    llike <- LogLike(theta, acv.model, tau = tau,
+                   dat = dat, PDcheck = PDcheck, 
+                   chatter = chatter)
+  }
+  
+  # posterior ~ likelihood * prior
+  lpost <- llike + lprior
+  return(lpost)
 }
 
 # -----------------------------------------------------------
@@ -236,14 +278,17 @@ gp.fit <- function(theta.0,
   #                 theta.0/theta.scale.
   #   maxit  - max number of interations, passed to optim()
   #   PDcheck   - TRUE/FALSE use Matrix::nearPD to coerse the matrix
-  #                C to be positive definite (passed to loglike)
+  #                C to be positive definite (passed to LogLike)
   #   chatter   - higher values give more run-time feedback
   #
   # Value:
   #  a list containing
-  #   par       - parameter values (maximum likelihood estimates)
-  #   err       - std. dev. of MLEs (based on Hessian matrix)
-  #   acv.model - name of function used to compute ACV
+  #   par             - parameter values (maximum likelihood estimates)
+  #   err             - std. dev. of MLEs (based on Hessian matrix)
+  #   acv.model       - name of function used to compute ACV
+  #   value           - value of LogLike at maximum
+  #   covergence      - convergence output from optim
+  #   nfunction.calls - counts output from optim()
   #
   # Description:
   #  Find the Maximum Likelihood Estimates (MLEs) for the
@@ -275,14 +320,14 @@ gp.fit <- function(theta.0,
   tau <- matrix.tau(dat$t)
   
   # check the initial position
-  loglike.0 <- loglike(theta.0, tau = tau, dat = dat, 
+  LogLike.0 <- LogPosterior(theta.0, tau = tau, dat = dat, 
                        acv.model = acv.model)
-  if (!is.finite(loglike.0)) {
+  if (!is.finite(LogLike.0)) {
     stop('Non-finite log likelihood for initial theta value.')
   }
   
   # perform the fitting  
-  result <- optim(fn = loglike, 
+  result <- optim(fn = LogPosterior, 
                   par = theta.0, 
                   method = method,
                   tau = tau, 
@@ -290,7 +335,7 @@ gp.fit <- function(theta.0,
                   PDcheck = PDcheck,
                   acv.model = acv.model,
                   hessian=TRUE,
-                  control=list(fnscale = -abs(loglike.0), 
+                  control=list(fnscale = -abs(LogLike.0), 
                                trace = trace, 
                                parscale = theta.scale,
                                maxit = maxit))
@@ -318,7 +363,10 @@ gp.fit <- function(theta.0,
   
   # return the parameter values and their errors
   outp <- list(par = result$par, err = err, 
-               acv.model = deparse(substitute(acv.model)))
+               acv.model = deparse(substitute(acv.model)),
+               value = result$value,
+               convergence = result$convergence,
+               nfunction.calls = result$counts)
   return(outp)  
 }
 

@@ -24,7 +24,7 @@ t <- seq(-0.5, 1.5, length = m)
 theta <- c(1.0, 0.2)
 mu <- array(0, dim = m) # set all means to zero
 tau <- matrix.tau(t) # compute |t_j - t_i|
-S <- acv2(theta, tau) # acf(tau)
+S <- acv(theta, tau) # acf(tau)
 diag(S) <- diag(S) + 0.001
 
 # produce Gaussian vector
@@ -83,13 +83,13 @@ theta <- c(0.0, 1.0, 1.0, 0.2)
 #l <- loglike(theta, dat = dat)
 
 theta <- c(0, 1.0, 1.0, 0.3)
-result <- fit.gp(theta, acv, dat = dat, 
+result <- gp.fit(theta, acv, dat = dat, 
                  method = "Nelder-Mead", 
                  maxit = 1000, chatter=1)
 
 result$par[2:4] <- abs(result$par[2:4]) 
 
-gp <- predict.gp(result$par, acv, dat, t.star)
+gp <- gp.predict(result$par, acv, dat, t.star)
 plot.snake(gp, add = TRUE, col.line = "blue", 
            col.snake = col.b, sigma = 2)
 
