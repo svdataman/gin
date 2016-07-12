@@ -39,7 +39,7 @@ plot(t, y, bty = "n", xlab = "time", ylab = "y",
 # now select only a subset of random times to make
 # observations
 
-n <- 100
+n <- 30
 indx <- sample(251:750, size = n)
 indx <- sort(indx)
 
@@ -58,7 +58,6 @@ segments(t, y-dy, t, y+dy)
 
 # --------------------------------------
 # now try reconstructing 
-col.b <- rgb(173, 216, 230, 100, maxColorValue = 255)
 
 dat <- data.frame(t = t, y = y, dy = dy)
 t.star <- seq(-1, 2.2, length = 400)
@@ -82,16 +81,24 @@ theta <- c(0.0, 1.0, 1.0, 0.2)
 # compute likelihood
 #l <- loglike(theta, dat = dat)
 
+# choose some intitial parameter values
 theta <- c(0, 1.0, 1.0, 0.3)
+
+# fit the model to the data, find Max.Like parameter values
 result <- gp.fit(theta, acv.model = acv, dat = dat, 
                  method = "Nelder-Mead", 
                  maxit = 1000, chatter=1)
 
+# --------------------------------------
+# extract the parameters of the ACV model
 result$par[2:4] <- abs(result$par[2:4]) 
 
+# compute 'conditional' mean and covariance
 gp <- gp.predict(result$par, acv.model = acv, dat, t.star)
-plot.snake(gp, add = TRUE, col.line = "blue", 
-           col.snake = col.b, sigma = 2)
+
+# plot a 'snake' showing mean +/- std.dev
+plot.snake(gp, add = TRUE, col.line = "red", 
+           sigma = 2, col.fill = "pink")
 
 # plot the observations
 points(t, y, pch = 16, cex = 1.5)
@@ -99,10 +106,15 @@ points(t, y, pch = 16, cex = 1.5)
 # plot error bars
 segments(t, y-dy, t, y+dy)
 
+# --------------------------------------
+# Now use MCMC to estimate posterior density of parameters
+stop()
+
 source('~/R/tonic/gwmcmc.R')
 source('~/R/tonic/plot_contour.R')
 source('~/R/tonic/diagnostics.R')
 
+# define the 'priors' for the parameter values
 LogPrior <- function(theta) {
   mu.d <- dnorm(theta[1], sd = 5, log = TRUE)
   nu.d <- dlnorm(theta[2], meanlog = 0, sdlog = 1, log = TRUE)
@@ -111,9 +123,16 @@ LogPrior <- function(theta) {
   return(mu.d <- nu.d + A.d + l.d)
 }
 
-chain <- gw.mcmc(LogPosterior, c(0.9, 1.9, 0.5, 0.1), acv.model = acv, 
-                 dat = dat, burn.in = 1e4, nwalkers=20, nsteps = 1e4, chatter=1)
+# Use gw.mcmc to generate parameter samples
+chain <- gw.mcmc(LogPosterior, c(0.9, 1.9, 0.5, 0.1), acv.model = acv,
+    dat = dat, burn.in = 1e4, nwalkers = 20, nsteps = 1e4, chatter = 1)
+
+# name the parameters
 colnames(chain$theta) <- c("mu", "nu", "A", "l")
+
+# plot scatter diagrams
 cont.pairs(chain$theta)
+
+# plot MCMC diagnostics
 mcmc.diag.plot(chain)
 

@@ -605,33 +605,36 @@ gp.sim <- function(theta,
 plot.snake <- function(dat, 
                        sigma = 1, 
                        add = FALSE, 
-                       col.snake = NULL,
+                       col.fill = NULL,
                        col.line = NULL,
+                       col.border = NULL,
                        ...) {
 
   # -----------------------------------------------------------
   # Inputs: 
-  #   dat    - 3 column data frame containing
-  #     t    - vector of n observation times
-  #     y    - vector of n observations
-  #     add  - (TRUE/FALSE) if TRUE then make a new plot
-  #     dy   - vector of n 'errors' on observations
-  # col.snake - (optional) colour for the 'snake'
-  # col.line -(optional) colour for the line
+  #   dat      - data frame or list containing columns/components
+  #     t      - vector of n observation times
+  #     y      - vector of n observations
+  #     dy     - vector of n 'errors' on observations
+  # add        - (TRUE/FALSE) if TRUE then make a new plot
+  # col.fill   - colour for the 'snake'
+  # col.border - colour for the 'snake' border
+  # col.line   - colour for the line through the mean
   #
   # Value:
   #     none
   #
   # Description:
-  #  Produces a 'snake' plot. This is a plot showing the mean of a process
-  #  against time (as a thick line) and the variance of the process illustrated
-  #  as a band. The lines goes through y(t) and the band covers y(t) +/-
-  #  sigma*dy(t) where dy(t) is the standard deviation - this is actually
-  #  sqrt(diag(covariance_matrix)). Sigma is a constant (>0) to allow one to
-  #  plot e.g. the +/-2 std.dev band.
+  #  Produces a 'snake' plot. This is a plot showing the mean of a Gaussian
+  #  process against time (as a thick line) and the variance of the process
+  #  illustrated as a band. The lines goes through mu(t) and the band covers
+  #  mu(t) +/- sigma*dy(t) where dy(t) is the standard deviation - this is
+  #  actually sqrt(diag(covariance_matrix)). Sigma is a constant (>0) to allow
+  #  one to plot e.g. the +/-2 std.dev band.
   #
   # History:
   #  06/07/16 - v0.1 - First working version
+  #  12/07/16 - v0.2 - Improved use of colour inputs
   #
   # Simon Vaughan, University of Leicester
   # -----------------------------------------------------------
@@ -654,11 +657,17 @@ plot.snake <- function(dat,
   dy <- dat$dy
 
   # define colours for the plot
-  if (is.null(col.snake)) {
-    col.snake <- rgb(255, 192, 203, 100, maxColorValue = 255)
+  if (is.null(col.fill)) {
+    col.fill <- rgb(255, 192, 203, maxColorValue = 255)
+  } else {
+    col.fill <- rgb( t(col2rgb(col.fill)), alpha = 100, 
+                     maxColorValue = 255)
   }
   if (is.null(col.line)) {
-    col.line <- rgb(255, 50, 50, 255, maxColorValue = 255)
+    col.line <- rgb(255, 50, 50, maxColorValue = 255)
+  }
+  if (is.null(col.border)) {
+    col.border <- NA
   }
 
   # prepare the snake (moving right along the bottom edge, then left along the top edge)
@@ -671,10 +680,10 @@ plot.snake <- function(dat,
   }
 
   # now add the snake
-  polygon(xx, yy, col = col.snake, border = NA)
+  polygon(xx, yy, col = col.fill, border = col.border, lwd = 2)
   
   # now add the line through the centre
-  lines(gp$t, gp$y, col = col.line, lwd=3)
+  lines(gp$t, gp$y, col = col.line, lwd = 3)
   
   # all done
 }
