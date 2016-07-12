@@ -315,8 +315,7 @@ gp.fit <- function(theta.0,
   # no. parameters?
   n.parm <- length(theta.0)
   
-  # compute all the time differences 
-  #  tau[i,j] = |t[j] - t[i]|
+  # compute all the time differences: tau[i,j] = |t[j] - t[i]|
   tau <- matrix.tau(dat$t)
   
   # check the initial position
@@ -340,12 +339,9 @@ gp.fit <- function(theta.0,
                                parscale = theta.scale,
                                maxit = maxit))
   
-  if (chatter > 1) { print( (result) ) }
-  
-  # test if Hessian is non-singular. If so, estimate errors using
-  # covariance matrix. Otherwise, set errors = 0.
-  # The covariance matrix = Inv[ -Hessian ] where 
-  #   Hessian_{ij} = dL^2 / dtheta_i dtheta_j
+  # test if Hessian is non-singular. If so, estimate errors using covariance
+  # matrix. Otherwise, set errors = 0. The covariance matrix = Inv[ -Hessian ]
+  # where Hessian_{ij} = dL^2 / dtheta_i dtheta_j
   if (class(try(solve(-result$hessian),silent = T)) == "matrix") {
     covar <- solve(-result$hessian)
     err <- sqrt(diag(covar))
@@ -382,15 +378,15 @@ gp.predict <- function(theta,
   # -----------------------------------------------------------
   # gp.predict
   # Inputs: 
-  #   theta - vector of (hyper-)parameters for ACV/PSD
+  #   theta     - vector of (hyper-)parameters for ACV/PSD
   #   acv.model - name of the function to compute ACV(tau|theta)
-  #   dat    - 3 column data frame (or list) containing
-  #     t    - vector of n observation times
-  #     y    - vector of n observations
-  #     dy   - vector of n 'errors' on observations
-  #  t.star  - vector of m times at which to predict 
-  #   PDcheck - TRUE/FALSE use Matrix::nearPD to coerse the matrix
-  #                C to be positive definite 
+  #   dat       - 3 column data frame (or list) containing
+  #     t       - vector of n observation times
+  #     y       - vector of n observations
+  #     dy      - vector of n 'errors' on observations
+  #  t.star     - vector of m times at which to predict 
+  #   PDcheck   - TRUE/FALSE use Matrix::nearPD to coerse the matrix
+  #                 C to be positive definite 
   #
   # Value:
   #  result - list containing
@@ -406,8 +402,7 @@ gp.predict <- function(theta,
   # 
   # Computes E[y(t.star)] given y(t.obs) and theta, and also compute covariances
   # for times t.star C[i,j] = C(t.star[i], t.star[j]). This may be a large 
-  # matrix, so we return by default only the leading diagnoal, i.e. the 
-  # variances at times t.star.
+  # matrix. Also return dy = sqrt( diag( cov ) ).
   #
   # Use the following matricies each defined as
   # K[t1[i],t2[j]] = ACF(|t2[j] - t1[i]|)
@@ -440,9 +435,8 @@ gp.predict <- function(theta,
 
   # first, extract the mean (mu) from the parameter vector theta,
   # the extract the error scaling parameter (nu) from the vector theta,
-  # Then remove these the theta, so now these only contains parameter for
+  # Then remove these the theta, so now theta only contains parameter for
   # the ACV function
-  # extract the mean - mu - from the theta vector
   mu <- theta[1]
   nu <- theta[2]
   theta <- theta[c(-1, -2)]
@@ -462,7 +456,8 @@ gp.predict <- function(theta,
 
   # eqn 2.20 of R&W - add the "error" term to the covariance matrix
   C <- K + nu * dat$dy^2 * diag(1, NCOL(K))
-  
+  rm(K)
+
   # compute the inverse covariance matrix
   C.inv <- solve(C)
 
