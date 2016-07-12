@@ -616,6 +616,7 @@ plot.snake <- function(dat,
   #     t      - vector of n observation times
   #     y      - vector of n observations
   #     dy     - vector of n 'errors' on observations
+  #     cov    - n*n array (if dy is not present use diag(cov))
   # add        - (TRUE/FALSE) if TRUE then make a new plot
   # col.fill   - colour for the 'snake'
   # col.border - colour for the 'snake' border
@@ -670,7 +671,8 @@ plot.snake <- function(dat,
     col.border <- NA
   }
 
-  # prepare the snake (moving right along the bottom edge, then left along the top edge)
+  # prepare the snake (moving right along the bottom edge, then left along the
+  # top edge)
   xx <- c(t, rev(t))
   yy <- c(y - sigma*dy, rev(y + sigma*dy))
   
