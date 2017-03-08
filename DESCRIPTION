@@ -1,0 +1,10 @@
+Package: gin
+Title: Gaussian Processes for time series inference
+Version: 0.0.0.9000
+Authors@R: person("Simon", "Vaughan", email = "svdataman@gmail.com", role = c("aut", "cre"))
+Description: A set of functions for analysing and generating time series using 
+             Gaussian Process (GP) models.
+Depends: R (>= 3.2.2)
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true

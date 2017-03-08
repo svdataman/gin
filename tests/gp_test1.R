@@ -39,7 +39,7 @@ plot(t, y, bty = "n", xlab = "time", ylab = "y",
 # now select only a subset of random times to make
 # observations
 
-n <- 30
+n <- 50
 indx <- sample(251:750, size = n)
 indx <- sort(indx)
 

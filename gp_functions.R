@@ -89,6 +89,7 @@ LogLike <- function(theta,
   if (!("dy" %in% colnames(dat))) { 
     dat$dy <- array(0, n) 
   }
+  dy <- dat$dy
   
   # if n * n array tau is not present then make one
   if (is.null(tau)) {
@@ -108,7 +109,7 @@ LogLike <- function(theta,
   mu <- theta[1]
   nu <- abs(theta[2])
   theta <- theta[c(-1, -2)]
-  
+
   # now subtract the mean from the data: y <- (y - mu)
   y <- dat$y - mu
   
