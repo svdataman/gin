@@ -2,9 +2,15 @@
 
 Gin is a collection of pure R tools for generating and manipulating Gaussian 
 Process models (GPs). It is also a nice [spirit](https://en.wikipedia.org/wiki/Gin)
-![gin](/figs/Martini_2.jpg)
+![gin](/figs/martini.png)
 
-The current version includes the top-level function:
+Gin is a blend of the words *G*aussian process *IN*ference.
+
+## Outline
+
+The current version includes the top-level functions:
+
+
 
 ## Installation
 
