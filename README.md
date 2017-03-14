@@ -136,7 +136,7 @@ We can also add psuedo-random realisations of this process (conditional on the d
 
 ## Bayesian inference
 
-Rather than Maximum Likelihood, we could specify priors on the (hyper-)parameters of the ACV, and peform Bayesian inference. In general, to do this we need an MCMC tool to sample from the posterior. Here I use [tonic](https://github.com/svdataman/tonic).
+Rather than Maximum Likelihood, we could specify priors on the (hyper-)parameters of the ACV, and peform Bayesian inference. 
 
 ```R
    # define the 'priors' for the parameter values
@@ -149,7 +149,7 @@ Rather than Maximum Likelihood, we could specify priors on the (hyper-)parameter
    }
 ```
 
-Now we use the GW sampler to sample from the posterior
+In general, to do this we need an MCMC tool to sample from the posterior. Here I use the GW sampler from [tonic](https://github.com/svdataman/tonic). 
 
 ```R
    # Use gw.mcmc to generate parameter samples
@@ -160,7 +160,7 @@ Now we use the GW sampler to sample from the posterior
                               chatter = 1, thin = 10)
 ```
 
-This takes a minute or two to cook. It should produce 2,000 samples after `thinning' by a factor 10 (it generates 20,000 samples but keeps only 1 in 10).
+This takes a minute or two to run. It should produce 2,000 samples after `thinning' by a factor 10 (it generates 20,000 samples but keeps only 1 in 10).
 First, we inspect the traces and autocorrelation of the chains.
 
 ```R
@@ -168,7 +168,7 @@ First, we inspect the traces and autocorrelation of the chains.
    tonic::chain_diagnosis(chain)
 ```
 
-Now we can visualise the posterior:
+Now we can visualise the posterior by plotting the 1 and 2 parameter marginal distributions.
 
 ```R
    # name the parameters
@@ -179,7 +179,17 @@ Now we can visualise the posterior:
                          prob1d = 0)
 ```
 
+The contours represent 1-, 2- and 3-sigma levels (in the sense of 68.3%, 95.4%
+and 99.7% of the mass).
+
 ![bayesian](figs/fig5.png)
+
+## To do
+
+* Add more ACV functions
+* Compute ACFs based on FT or specified PSD
+* Allow for time binning (not point samples in time)
+* Allow for lognormal process
 
 ## References
 
