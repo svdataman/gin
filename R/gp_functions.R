@@ -213,7 +213,7 @@ gp_logPosterior <- function(theta,
     lprior <- 0
   } else {
     if (!exists('logPrior')) stop('The logPrior function does not exist.')
-    prior <- logPrior(theta)
+    lprior <- logPrior(theta)
   }
 
   # check if prior = 0; if so, no need to compuite gp_logLikelihood

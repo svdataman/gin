@@ -96,7 +96,7 @@ logPrior <- function(theta) {
   nu.d <- dlnorm(theta[2], meanlog = 0, sdlog = 1, log = TRUE)
   A.d <- dlnorm(theta[3], meanlog = 0, sdlog = 1, log = TRUE)
   l.d <- dlnorm(theta[4], meanlog = 0, sdlog = 1, log = TRUE)
-  return(mu.d <- nu.d + A.d + l.d)
+  return(mu.d + nu.d + A.d + l.d)
 }
 
 # Use gw.mcmc to generate parameter samples

@@ -1,10 +1,9 @@
-# Gin
+# Gin (Gaussian process Inference)
 
 Gin is a collection of pure R tools for generating and manipulating Gaussian 
 Process models (GPs). It is also a nice [spirit](https://en.wikipedia.org/wiki/Gin)
 ![gin](/figs/martini.png)
 
-Gin is a blend of the words *G*aussian process *IN*ference.
 
 ## Outline
 
@@ -134,6 +133,10 @@ We can also add psuedo-random realisations of this process (conditional on the d
 
 ![model](figs/fig4.png)
 
+
+## Bayesian inference
+
+Rather than Maximum Likelihood, we could specify priors on the (hyper-)parameters of the ACV, and peform Bayesian inference. In general, to do this we need an MCMC tool to sample from the posterior. Here I use [tonic](https://github.com/svdataman/tonic).
 
 ## References
 
