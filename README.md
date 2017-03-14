@@ -138,6 +138,49 @@ We can also add psuedo-random realisations of this process (conditional on the d
 
 Rather than Maximum Likelihood, we could specify priors on the (hyper-)parameters of the ACV, and peform Bayesian inference. In general, to do this we need an MCMC tool to sample from the posterior. Here I use [tonic](https://github.com/svdataman/tonic).
 
+```R
+   # define the 'priors' for the parameter values
+   logPrior <- function(theta) {
+     mu.d <- dnorm(theta[1], sd = 5, log = TRUE)
+     nu.d <- dlnorm(theta[2], meanlog = 0, sdlog = 1, log = TRUE)
+     A.d <- dlnorm(theta[3], meanlog = 0, sdlog = 1, log = TRUE)
+     l.d <- dlnorm(theta[4], meanlog = 0, sdlog = 1, log = TRUE)
+     return(mu.d + nu.d + A.d + l.d)
+   }
+```
+
+Now we use the GW sampler to sample from the posterior
+
+```R
+   # Use gw.mcmc to generate parameter samples
+   chain <- tonic::gw_sampler(gp_logPosterior, theta.0 = theta,
+                              acv.model = acv, logPrior = logPrior,
+                              dat = dat, burn.in = 1e4,
+                              nsteps = 20e4,
+                              chatter = 1, thin = 10)
+```
+
+This takes a minute or two to cook. It should produce 2,000 samples after `thinning' by a factor 10 (it generates 20,000 samples but keeps only 1 in 10).
+First, we inspect the traces and autocorrelation of the chains.
+
+```R
+   # plot MCMC diagnostics
+   tonic::chain_diagnosis(chain)
+```
+
+Now we can visualise the posterior:
+
+```R
+   # name the parameters
+   colnames(chain$theta) <- c("mu", "nu", "A", "l")
+
+   # plot scatter diagrams
+   tonic::contour_matrix(chain$theta, prob.levels = c(1,2,3), sigma = TRUE,
+                         prob1d = 0)
+```
+
+![bayesian](figs/fig5.png)
+
 ## References
 
 For more on GPs, the best reference is:

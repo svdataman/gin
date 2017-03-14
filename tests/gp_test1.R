@@ -100,8 +100,11 @@ logPrior <- function(theta) {
 }
 
 # Use gw.mcmc to generate parameter samples
-chain <- tonic::gw_sampler(gp_logPosterior, theta.0 = theta, acv.model = acv,
-    dat = dat, burn.in = 1e4, nwalkers = 50, nsteps = 1e4, chatter = 1)
+chain <- tonic::mh_sampler(gp_logPosterior, theta.0 = theta,
+                           acv.model = acv, logPrior = logPrior,
+                           dat = dat, burn.in = 1e4,
+                           nchains = 5, nsteps = 5e4,
+                           adapt = TRUE, chatter = 1)
 
 # name the parameters
 colnames(chain$theta) <- c("mu", "nu", "A", "l")
