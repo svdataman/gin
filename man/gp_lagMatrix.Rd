@@ -12,7 +12,7 @@ gp_lagMatrix(x, y)
 \item{y}{vector 2 (default to vector 1 if not specified)}
 }
 \value{
-\code{N*M} array of differences, \code{result[i,j] = x[i] - y[j]}
+\code{N*M} array of absolute differences, \code{result[i,j] = |x[i] - y[j]|}
 }
 \description{
 \code{gp_lagMatrix} returns a matrix of differences between two vectors.
@@ -25,10 +25,10 @@ input, return the \code{N*M} matrix of differences \code{result[i,j] = x[i] - y[
 
 Note that in the special case that \code{x=y} we have a square symmetric
 matrix: \code{result[i,j] = result[j,i]}. In the even more special case that
-the two vectors are evenly spaced (\code{x[i] = y[i] = i * delta + const})
-then we have a circulant matrix; the \code{j}th column \code{result[,j]} is
-the \code{(j-1)}th cyclic permutation of the first column. This matrix is
-symmetric, Toeplitz and circulant.
+the two vectors are synchronous and evenly spaced (\code{x[i] = y[i] = i *
+delta + const}) then we have a circulant matrix; the \code{j}th column
+\code{result[,j]} is the \code{(j-1)}th cyclic permutation of the first
+column. This matrix is symmetric, Toeplitz and circulant.
 }
 
 \examples{

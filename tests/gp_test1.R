@@ -100,17 +100,18 @@ logPrior <- function(theta) {
 }
 
 # Use gw.mcmc to generate parameter samples
-chain <- tonic::mh_sampler(gp_logPosterior, theta.0 = theta,
+chain <- tonic::gw_sampler(gp_logPosterior, theta.0 = theta,
                            acv.model = acv, logPrior = logPrior,
                            dat = dat, burn.in = 1e4,
-                           nchains = 5, nsteps = 5e4,
-                           adapt = TRUE, chatter = 1)
+                           nsteps = 20e4,
+                           chatter = 1, thin = 10)
 
 # name the parameters
 colnames(chain$theta) <- c("mu", "nu", "A", "l")
 
 # plot scatter diagrams
-tonic::contour_matrix(chain$theta)
+tonic::contour_matrix(chain$theta, prob.levels = c(1,2,3), sigma = TRUE,
+                      prob1d = 0)
 
 # plot MCMC diagnostics
 tonic::chain_diagnosis(chain)

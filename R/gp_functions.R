@@ -28,49 +28,15 @@
 #'
 #' @section Notes:
 #'  Compute the log likelihood for Gaussian Process model with parameters theta
-#'  given data \eqn{\{t, y, dy\}}
-#'  and an (optional) N*N matrix of lags, tau. See algorithm 2.1 of Rasmussen &
-#'  Williams (2006). The input data frame 'dat' should contain three columns:
-#'  \code{t}, \code{y}, \code{dy}. \code{t[i]} and \code{y[i]} give the times
-#'  and the measured values of those
-#'  times. \code{dy} gives the 'error' on the measurements \code{y}, assumed to be
-#'  independent Gaussian errors wih standard deviation \code{dy}. If \code{dy}
-#'  is not present
-#'  we assumine \code{dy[i] = 0} for all \code{i}. The columns \code{t},
+#'  given data \eqn{\{t, y, dy\}} and an (optional) N*N matrix of lags, tau. See
+#'  algorithm 2.1 of Rasmussen & Williams (2006). The input data frame 'dat'
+#'  should contain three columns: \code{t}, \code{y}, \code{dy}. \code{t[i]} and
+#'  \code{y[i]} give the times and the measured values of those times. \code{dy}
+#'  gives the 'error' on the measurements \code{y}, assumed to be independent
+#'  Gaussian errors wih standard deviation \code{dy}. If \code{dy} is not
+#'  present we assumine \code{dy[i] = 0} for all \code{i}. The columns \code{t},
 #'  \code{y}, and \code{dy} are all \code{n}-element vectors.
 #'
-#'  For multivariate normal distribution the likelihood is
-#'
-#'  \deqn{L(\theta) = (2\pi)^{-N/2} * det(C)^{-1/2} * exp(-1/2 *
-#'  (y-\mu)^T C^{-1} (y-\mu))}
-#'
-#'  where y is an N-element vector of data and C is an N*N covariance matrix
-#'  (positive, symmetric, semi-definite). We compute \eqn{l = log(L)} which can be
-#'  written:
-#'
-#'  \deqn{  l(\theta) = -(n/2) * log(2\pi)
-#'        - (1/2) log(det(C))
-#'        - (1/2) ((y-mu)^T C^{-1} (y-mu)}
-#'
-#'  The N*N matrix inverse \eqn{C^{-1}} is slow. Cholesky decomposition allows a
-#'  faster calculation of l:
-#'
-#'  \deqn{  C = LL^T }
-#'
-#'  and so
-#'
-#'  \deqn{  \det(C) = \prod L_{ii}^2 }
-#'  \deqn{  \log(\det(C)) = 2 \sum \log L_{ii} = 2 \sum diag(L) }
-#'
-#'  and
-#'
-#'  \deqn{  C^{-1} = (L L^T)^{-1} = (L^{-1})^T (L^{-1}) }
-#'  \deqn{   Q = (y-mu)^T C^{-1} (y-mu) }
-#'  \deqn{     = (y')^T (L^{-1})^T (L^{-1}) (y') }
-#'  \deqn{     = [(L^{-1}) (y')]^T [(L^{-1}) (y')] }
-#'  \deqn{     = z^T z}
-#'   where \eqn{z = L^{-1} y'}, and \eqn{y' = Lz}. We can find \eqn{z} using
-#'   \eqn{z = solve(L,y')} where \eqn{y' = y - mu}.
 #'
 #' @seealso \code{\link{gp_logPosterior}}
 #'
@@ -81,6 +47,36 @@ gp_logLikelihood <- function(theta,
                     dat = NULL,
                     PDcheck = TRUE,
                     chatter = 0) {
+
+  # For multivariate normal distribution the likelihood is
+  #   L(\theta) = (2\pi)^{-N/2} * det(C)^{-1/2} *
+  #                      exp(-1/2 * (y-\mu)^T C^{-1} (y-\mu))}
+  #
+  # where y is an N-element vector of data and C is an N*N covariance matrix
+  # (positive, symmetric, semi-definite). We compute \eqn{l = log(L)} which can
+  # be written:
+  #
+  # l(\theta) = -(n/2) * log(2\pi) - (1/2) log(det(C))
+  #                      - (1/2) ((y-mu)^T C^{-1} (y-mu)}
+  #
+  # The N*N matrix inverse \eqn{C^{-1}} is slow. Cholesky decomposition allows a
+  # faster calculation of l: C = LL^T.
+  #
+  # So
+  #
+  #  \det(C) = \prod L_{ii}^2
+  #  \log(\det(C)) = 2 \sum \log L_{ii} = 2 \sum diag(L)
+  #
+  #  and
+  #
+  #  C^{-1} = (L L^T)^{-1} = (L^{-1})^T (L^{-1})
+  #  Q = (y-mu)^T C^{-1} (y-mu)
+  #    = (y')^T (L^{-1})^T (L^{-1}) (y')
+  #    = [(L^{-1}) (y')]^T [(L^{-1}) (y')]
+  #    = z^T z
+  #  where z = L^{-1} y', and y' = Lz. We can find z using
+  #   z = solve(L,y') where y' = y - mu.
+
 
   # check arguments
   if (missing(theta)) {stop('** Missing theta input.')}
@@ -176,11 +172,15 @@ gp_logLikelihood <- function(theta,
 #'
 #' \code{gp_logPosterior} compute posterior density for GP model.
 #'
-#' Calculate posterior density for a Gaussian Process (GP) model
-#' given functions for the AutoCovariance (ACV) of the GP, the
-#' log likelihood, and the log prior (both log densities).
+#' Calculate posterior density for a Gaussian Process (GP) model given some data
+#' (day) and functions for the AutoCovariance (ACV) of the GP, the log
+#' likelihood, and the log prior (both log densities).
 #'
-#' @param PDcheck (logical) check/correct for positive definiteness?
+#' Simply computes log(posterior) = log(likelihood) + log(prior), where
+#' log(likelihood) is a function of the data and a ACV (and its parameters), and
+#' log(prior) is a function of the ACV parameters only.
+#'
+#' @param logPrior (name) Name of the function returning the log Prior density.
 #' @inheritParams gp_logLikelihood
 #'
 #' @return
@@ -206,7 +206,8 @@ gp_logPosterior <- function(theta,
   if (missing(acv.model)) stop('Must specify name of ACV function')
   if (!exists('acv.model')) stop('The specified ACV function does not exist.')
 
-  if (!exists('gp_logLikelihood')) stop('The gp_logLikelihood function does not exist.')
+  if (!exists('gp_logLikelihood'))
+    stop('The gp_logLikelihood function does not exist.')
 
   # compute prior
   if (is.null(logPrior)) {
@@ -247,15 +248,15 @@ gp_logPosterior <- function(theta,
 #' @param y vector 2 (default to vector 1 if not specified)
 #'
 #' @return
-#' \code{N*M} array of differences, \code{result[i,j] = x[i] - y[j]}
+#' \code{N*M} array of absolute differences, \code{result[i,j] = |x[i] - y[j]|}
 #'
 #' @section Notes:
 #' Note that in the special case that \code{x=y} we have a square symmetric
 #' matrix: \code{result[i,j] = result[j,i]}. In the even more special case that
-#' the two vectors are evenly spaced (\code{x[i] = y[i] = i * delta + const})
-#' then we have a circulant matrix; the \code{j}th column \code{result[,j]} is
-#' the \code{(j-1)}th cyclic permutation of the first column. This matrix is
-#' symmetric, Toeplitz and circulant.
+#' the two vectors are synchronous and evenly spaced (\code{x[i] = y[i] = i *
+#' delta + const}) then we have a circulant matrix; the \code{j}th column
+#' \code{result[,j]} is the \code{(j-1)}th cyclic permutation of the first
+#' column. This matrix is symmetric, Toeplitz and circulant.
 #'
 #' @examples
 #' result <- gp_lagMatrix(c(1,2,3), c(2,3,4,5,6))
@@ -284,54 +285,56 @@ gp_lagMatrix <- function(x, y) {
 
 # -----------------------------------------------------------
 # optimise the deviance (-2*log[likelihood])
+#
+# History:
+#  16/12/13 - v0.1 - First working version
+#  05/07/16 - v0.2 - Major re-write
+#
+# Simon Vaughan, University of Leicester
+# -----------------------------------------------------------
 
+#' Find Maximum Posterior solution for a Gaussian Process model.
+#'
+#' \code{gp_fit} returns the posterior mode for a Gaussian Process model.
+#'
+#' @param method - choice of method for \code{optim}
+#' @param theta.scale - passed as \code{parscale} to \code{optim}.
+#' @param maxit  - passed to \code{optim}.
+#' @inheritParams gp_logLikelihood
+#' @inheritParams gp_logPosterior
+#'
+#' @return
+#'  A list with components (similar to \code{optim}):
+#'   \item{par}{parameter values (maximum likelihood estimates)}
+#'   \item{err}{std. dev. of MLEs (based on Hessian matrix)}
+#'   \item{acv.model}{name of function used to compute ACV}
+#'   \item{value}{value of \code{gp_logLikelihood} at maximum}
+#'   \item{covergence}{\code{convergence} output from \code{optim}}
+#'   \item{nfunction.calls}{\code{counts} output from \code{optim}}
+#'
+#' @section Notes:
+#'  Find the posterior mode for a GP model, given data \code{dat}. See
+#'  \code{gp_logLikelihood} for details of the input data form. The user must
+#'  supply the name of a suitable ACV function and some intial values for the
+#'  ACV's parameters (the hyper-parameters of the GP). The parameters are then
+#'  optimised using \code{optim}. (This is essentially a wrapper function
+#'  applying \code{optim} on \code{gp_logPosterior}.) If no \code{logPrior}
+#'  function is supplied, the result is equivalent to Maximum Likelihood
+#'  Estimation.
+#'
+#'  @seealso \code{\link{gp_logLikelihood}}, \code{\link{gp_logPosterior}}
+#'
+#'  @export
 gp_fit <- function(theta.0,
                    acv.model = NULL,
                    dat = NULL,
+                   logPrior = NULL,
                    method = "Nelder-Mead",
                    trace = 0,
                    theta.scale = NULL,
                    maxit = 5E3,
                    chatter = 0,
                    PDcheck = FALSE) {
-
-  # -----------------------------------------------------------
-  # Inputs:
-  #   theta  - vector of (hyper-)parameters for ACV/PSD
-  #   acv.model - name of the function to compute ACV(tau|theta)
-  #   dat    - 3 column data frame (or list) containing
-  #     t    - vector of n observation times
-  #     y    - vector of n observations
-  #     dy   - vector of n 'errors' on observations
-  #   method - choice of method for optim()
-  #   theta.scale - vector of rescaling values for the
-  #                 parameters these. optim() will fit
-  #                 theta.0/theta.scale.
-  #   maxit  - max number of interations, passed to optim()
-  #   PDcheck   - TRUE/FALSE use Matrix::nearPD to coerse the matrix
-  #                C to be positive definite (passed to gp_logLikelihood)
-  #   chatter   - higher values give more run-time feedback
-  #
-  # Value:
-  #  a list containing
-  #   par             - parameter values (maximum likelihood estimates)
-  #   err             - std. dev. of MLEs (based on Hessian matrix)
-  #   acv.model       - name of function used to compute ACV
-  #   value           - value of gp_logLikelihood at maximum
-  #   covergence      - convergence output from optim
-  #   nfunction.calls - counts output from optim()
-  #
-  # Description:
-  #  Find the Maximum Likelihood Estimates (MLEs) for the
-  #  parameters theta of the ACF/PSD model, given the data
-  #  {x, y, dy}.
-  #
-  # History:
-  #  16/12/13 - v0.1 - First working version
-  #  05/07/16 - v0.2 - Major re-write
-  #
-  # Simon Vaughan, University of Leicester
-  # -----------------------------------------------------------
 
   # check arguments
   if (missing(theta.0)) {stop('** Missing theta.0 input.')}
@@ -399,58 +402,68 @@ gp_fit <- function(theta.0,
 
 # -----------------------------------------------------------
 # Predict the mean of the Gaussian Process
+#
+# History:
+#  16/12/13 - v0.1 - First working version
+#  05/07/16 - v0.2 - Major re-write
+#
+# Simon Vaughan, University of Leicester
+# -----------------------------------------------------------
 
+#' Reconstruct a Gaussian Process conditional on some data.
+#'
+#' \code{gp_conditional} returns mean and covariance of a GP given data.
+#'
+#' @inheritParams gp_logLikelihood
+#' @inheritParams gp_logPosterior
+#' @inheritParams gp_sim
+#'
+#' @return
+#'   A list containing:
+#'   \item{t}{prediction times (same as \code{t.star}.)}
+#'   \item{y}{mean of GP model at times \code{t}.}
+#'   \item{dy}{standard deviation of GP model at times \code{t}.}
+#'   \item{cov}{The full \code{m*m} covariance matrix.}
+#'
+#' @section Notes:
+#'
+#' Compute the expectation of the GP with covariance matrix specified by
+#' (hyper-)parameters 'theta' at times \code{t.star} based on observations
+#' \code{y} at times \code{t} (in the \code{dat} input).
+#' Uses eqn 2.23 of Rasmussen & Williams (2006).
+#'
+#' This may be used for interpolation (between available time points) or
+#' prediction/extrapolation (beyond the range of available time points).
+#' I consider both of these as aspects of `reconstruction'.
+#'
+#' In practice we compute \eqn{E[y(t.star)]} given \code{y(t.obs)} and
+#' \code{theta}. This is the mean (as a function of time) of the GP proceess
+#' (with specified ACV) that is conditional on the givendata. We compute not
+#' just the mean but the full covariance matrix for times \code{t.star}:
+#' \code{C[i,j] = ACV(t.star[i], t.star[j])}. This may be a large matrix. Also
+#' returns \code{dy = sqrt(diag(cov))}.
+#'
+#' @seealso \code{\link{gp_sim}}, \code{\link{rmvnorm}}
+#'
+#' @export
 gp_conditional <- function(theta,
                        acv.model = NULL,
                        dat = NULL,
                        t.star = NULL,
                        PDcheck = FALSE) {
 
-  # -----------------------------------------------------------
-  # gp_conditional
-  # Inputs:
-  #   theta     - vector of (hyper-)parameters for ACV/PSD
-  #   acv.model - name of the function to compute ACV(tau|theta)
-  #   dat       - 3 column data frame (or list) containing
-  #     t       - vector of n observation times
-  #     y       - vector of n observations
-  #     dy      - vector of n 'errors' on observations
-  #  t.star     - vector of m times at which to predict
-  #   PDcheck   - TRUE/FALSE use Matrix::nearPD to coerse the matrix
-  #                 C to be positive definite
-  #
-  # Value:
-  #  result - list containing
-  #     t   - prediction times
-  #     y   - mean of GP model at times t
-  #    dy   - sqrt(variance) of GP model at times t
-  #   cov   - full m*m covariance matrix
-  #
-  # Description:
-  # Predict the expectation of the GP with covariance matrix specified by
-  # (hyper-)parameters 'theta' at times t.star based on observations y.obs and
-  # times t.obs. Uses eqn 2.23 of Rasmussen & Williams (2006).
-  #
-  # Computes E[y(t.star)] given y(t.obs) and theta, and also compute covariances
-  # for times t.star C[i,j] = C(t.star[i], t.star[j]). This may be a large
-  # matrix. Also return dy = sqrt( diag( cov ) ).
-  #
   # Use the following matricies each defined as
+  #
   # K[t1[i],t2[j]] = ACF(|t2[j] - t1[i]|)
+  #
   # if we have
-  #  t.obs - times at observations
-  #  t.star  - times at predictions
-  #  K     - ACV(t.obs, t.obs)
-  #  K.ik  - ACV(t.obs, t.star)
-  #  K.ki  - ACV(t.star, t.obs)
-  #  K.kk  - ACV(t.star, t.star)
-  #
-  # History:
-  #  16/12/13 - v0.1 - First working version
-  #  05/07/16 - v0.2 - Major re-write
-  #
-  # Simon Vaughan, University of Leicester
-  # -----------------------------------------------------------
+  #   t.obs - times at observations
+  #   t.star  - times at predictions
+  # then the matrices are:
+  #   K     - ACV(t.obs, t.obs)
+  #   K.ik  - ACV(t.obs, t.star)
+  #   K.ki  - ACV(t.star, t.obs)
+  #   K.kk  - ACV(t.star, t.star)
 
   # check arguments
   if (missing(theta)) {stop('** Missing theta argument.')}
@@ -524,54 +537,62 @@ gp_conditional <- function(theta,
 
 # -----------------------------------------------------------
 # generate a random GP realisation
+#
+# History:
+#  17/12/13 - v0.1 - First working version
+#  05/07/16 - v0.2 - Major re-write
+#
+# Simon Vaughan, University of Leicester
+# -----------------------------------------------------------
 
+#' Generate a random GP realisation.
+#'
+#' \code{gp_sim} returns one or more data vectors drawn from a Gaussian Process.
+#'
+#' @param t.star (vector) times at which to compute the simulation(s).
+#' @param N.sim (integer) number of random vectors to draw.
+#' @param plot (logical) add lines to an existing plot showing the results.
+#' @inheritParams gp_logLikelihood
+#' @inheritParams gp_logPosterior
+#'
+#' @return
+#'  An \code{n * N.sim} matrix, each column is a simulation, a pseudo-random
+#'  \code{n}-length vector drawn from the Gaussian Process.
+#'
+#' @section Notes:
+#'   Simulate random realisations of a Gaussian Process (GP) with
+#'   covariance defined by parameters \code{theta}, at times \code{t.star}.
+#'   This is essentially eqn 2.22 of Rasmussen & Williams (2006):
+#'
+#'   y.sim ~ N(mean = y.star, cov = C)
+#'
+#'   Uses the function \code{rmvnorm} from the \code{mvtnorm} package to
+#'   generate \code{n}-dimensional Gaussian vectors.
+#'
+#'   If \code{dat} is supplied (a data frame/list containing \code{t} and
+#'   \code{y}) then the conditional mean values at times \code{t.star},
+#'   \code{y[t.star]} and covariance matrix \code{C} for lags \code{tau[i,j] =
+#'   |t.star[j] - t.star[i]|} are generated by the \code{gp_conditional}
+#'   function. See \code{gp_logLikelihood} for more about the input data form.
+#'
+#'   If \code{dat} is not supplied we sample from the 'prior' GP, i.e. assume
+#'   mean = \code{theta[1]} and covariance matrix given by \code{acv.model} and
+#'   \code{theta} parameters.
+#'
+#'   This function essentially just computes a covariance matrix given an
+#'   autocovariance function (and its parameters), which may be conditional
+#'   on some data, and uses this to draw a random Gaussian vector with
+#'   \code{rmvnorm}.
+#'
+#' @seealso \code{\link{gp_conditional}}, \code{\link{rmvnorm}}
+#'
+#' @export
 gp_sim <- function(theta,
                    acv.model = NULL,
                    dat = NULL,
                    t.star = NULL,
                    N.sim = 1,
                    plot = FALSE) {
-
-  # -----------------------------------------------------------
-  # gp_sim
-  # Inputs:
-  #  theta   - vector of (hyper-)parameters for ACV/PSD
-  #  acv.model - name of the function to compute ACV(tau|theta)
-  #  dat     - 3 column data frame (or list) containing
-  #     t    - vector of n observation times
-  #     y    - vector of n observations
-  #     dy   - vector of n 'errors' on observations
-  #  t.star  - vector of m times at which to simulate
-  #  N.sim   - how many simulations to produce
-  #  plot    - TRUE/FALSE - overlay a plot of the simulations?
-  #
-  # Value:
-  #  y.out   - [n, N.sim] matrix, each column a simulation
-  #
-  # Description:
-  # Simulate random realisations of a Gaussian Process (GP) with covariance
-  # defined by parameters theta, at times t.star, given data {t, y, dy}. This is
-  # essentially eqn 2.22 of Rasmussen & Williams (2006):
-  #
-  #   y.sim ~ N(mean = y.star, cov = C)
-  #
-  # Uses the function rmvnorm from the mvtnorm package to generate m-dimensional
-  # Gaussian vectors.
-  #
-  # If dat is supplied (a data frame/list containing t and y) then the
-  # conditional mean values at times t.star, y[t.star] and covariance matrix C
-  # for lags tau[i,j] = |t.star[j] - t.star[i]| are generated by the gp_conditional
-  # function.
-  #
-  # If dat is not supplied we sample from the 'prior' GP, i.e. assume mean =
-  # theta[1] and covariance matrix given by acv.model and theta parameters.
-  #
-  # History:
-  #  17/12/13 - v0.1 - First working version
-  #  05/07/16 - v0.2 - Major re-write
-  #
-  # Simon Vaughan, University of Leicester
-  # -----------------------------------------------------------
 
   # check arguments
   if (missing(theta)) {stop('** Missing theta argument.')}

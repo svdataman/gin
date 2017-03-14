@@ -30,49 +30,14 @@ scalar value of log[likelihood(theta)]
 \section{Notes}{
 
  Compute the log likelihood for Gaussian Process model with parameters theta
- given data \eqn{\{t, y, dy\}}
- and an (optional) N*N matrix of lags, tau. See algorithm 2.1 of Rasmussen &
- Williams (2006). The input data frame 'dat' should contain three columns:
- \code{t}, \code{y}, \code{dy}. \code{t[i]} and \code{y[i]} give the times
- and the measured values of those
- times. \code{dy} gives the 'error' on the measurements \code{y}, assumed to be
- independent Gaussian errors wih standard deviation \code{dy}. If \code{dy}
- is not present
- we assumine \code{dy[i] = 0} for all \code{i}. The columns \code{t},
+ given data \eqn{\{t, y, dy\}} and an (optional) N*N matrix of lags, tau. See
+ algorithm 2.1 of Rasmussen & Williams (2006). The input data frame 'dat'
+ should contain three columns: \code{t}, \code{y}, \code{dy}. \code{t[i]} and
+ \code{y[i]} give the times and the measured values of those times. \code{dy}
+ gives the 'error' on the measurements \code{y}, assumed to be independent
+ Gaussian errors wih standard deviation \code{dy}. If \code{dy} is not
+ present we assumine \code{dy[i] = 0} for all \code{i}. The columns \code{t},
  \code{y}, and \code{dy} are all \code{n}-element vectors.
-
- For multivariate normal distribution the likelihood is
-
- \deqn{L(\theta) = (2\pi)^{-N/2} * det(C)^{-1/2} * exp(-1/2 *
- (y-\mu)^T C^{-1} (y-\mu))}
-
- where y is an N-element vector of data and C is an N*N covariance matrix
- (positive, symmetric, semi-definite). We compute \eqn{l = log(L)} which can be
- written:
-
- \deqn{  l(\theta) = -(n/2) * log(2\pi)
-       - (1/2) log(det(C))
-       - (1/2) ((y-mu)^T C^{-1} (y-mu)}
-
- The N*N matrix inverse \eqn{C^{-1}} is slow. Cholesky decomposition allows a
- faster calculation of l:
-
- \deqn{  C = LL^T }
-
- and so
-
- \deqn{  \det(C) = \prod L_{ii}^2 }
- \deqn{  \log(\det(C)) = 2 \sum \log L_{ii} = 2 \sum diag(L) }
-
- and
-
- \deqn{  C^{-1} = (L L^T)^{-1} = (L^{-1})^T (L^{-1}) }
- \deqn{   Q = (y-mu)^T C^{-1} (y-mu) }
- \deqn{     = (y')^T (L^{-1})^T (L^{-1}) (y') }
- \deqn{     = [(L^{-1}) (y')]^T [(L^{-1}) (y')] }
- \deqn{     = z^T z}
-  where \eqn{z = L^{-1} y'}, and \eqn{y' = Lz}. We can find \eqn{z} using
-  \eqn{z = solve(L,y')} where \eqn{y' = y - mu}.
 }
 
 \seealso{

@@ -17,9 +17,11 @@ the first element is the mean value mu}
 
 \item{dat}{(data frame) an N * 3 data frame/array, 3 columns}
 
-\item{PDcheck}{(logical) check/correct for positive definiteness?}
+\item{PDcheck}{(logical) use Matrix::nearPD to coerse the matrix}
 
 \item{chatter}{(integer) higher values give more run-time feedback}
+
+\item{logPrior}{(name) Name of the function returning the log Prior density.}
 }
 \value{
 log posterior density (scalar)
@@ -28,9 +30,13 @@ log posterior density (scalar)
 \code{gp_logPosterior} compute posterior density for GP model.
 }
 \details{
-Calculate posterior density for a Gaussian Process (GP) model
-given functions for the AutoCovariance (ACV) of the GP, the
-log likelihood, and the log prior (both log densities).
+Calculate posterior density for a Gaussian Process (GP) model given some data
+(day) and functions for the AutoCovariance (ACV) of the GP, the log
+likelihood, and the log prior (both log densities).
+
+Simply computes log(posterior) = log(likelihood) + log(prior), where
+log(likelihood) is a function of the data and a ACV (and its parameters), and
+log(prior) is a function of the ACV parameters only.
 }
 \seealso{
 \code{\link{gp_logLikelihood}}
