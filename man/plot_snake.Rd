@@ -4,8 +4,8 @@
 \alias{plot_snake}
 \title{Make a 'snake' plot of a Gaussian Process model}
 \usage{
-plot_snake(dat, sigma = 1, add = FALSE, col.line = "red",
-  col.fill = NULL, col.border = NULL, ...)
+plot_snake(dat, sigma = 1, add = FALSE, col.line = 1, col.fill = NULL,
+  col.border = NULL, ...)
 }
 \arguments{
 \item{dat}{(data frame) data for time series.}

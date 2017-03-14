@@ -35,7 +35,7 @@
 plot_snake <- function(dat,
                        sigma = 1,
                        add = FALSE,
-                       col.line = "red",
+                       col.line = 1,
                        col.fill = NULL,
                        col.border = NULL,
                        ...) {
@@ -59,13 +59,18 @@ plot_snake <- function(dat,
   dy <- dat$dy
 
   # define colours for the plot
+  cols <- col.line
+  if (mode(col.line) == "numeric") {
+    col.line <- RColorBrewer::brewer.pal(8, "Set1")[cols]
+  }
+
   if (is.null(col.fill)) {
     col.fill <- col.line
   }
   if (is.null(col.border)) {
     col.border <- NA
   }
-  col.fill <- rgb(t(col2rgb(col.fill)), alpha = 100,
+  col.fill <- rgb(t(col2rgb(col.fill)), alpha = 50,
                   maxColorValue = 255)
 
 
