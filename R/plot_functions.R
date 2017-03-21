@@ -124,6 +124,8 @@ plot_snake <- function(dat,
 #' @param extend (float) Extend the time axis by this factor.
 #' @param grid.lwd (float) The line width (>0) for the grid.
 #' @param grid.col (colour) The colour of the grid.
+#' @param horizon (logical or float) make a 'horizon' style plot?
+#' @param error (logical) plot errors if available?
 #' @inheritParams plot_snake
 #'
 #' @return
@@ -163,7 +165,9 @@ plot_ts <- function(ts1, ts2,
                     type = "p",
                     grid.lwd = 1,
                     grid.col = "lightgray",
-                    ...) {
+                    horizon = FALSE,
+                    split = FALSE,
+                     ...) {
 
   # check arguments
   if (!exists('ts1')) {stop('** Missing ts1.')}
@@ -178,6 +182,10 @@ plot_ts <- function(ts1, ts2,
   dt <- array(0, dim = n)
   if ("dy" %in% names(ts1)) dy <- ts1$dy
   if ("dt" %in% names(ts1)) dt <- ts1$dt
+  if (error == FALSE) {
+    dy <- 0
+    dt <- 0
+  }
 
   # set ranges
   if (is.null(xlim)) {
@@ -187,22 +195,6 @@ plot_ts <- function(ts1, ts2,
   trange <- diff(xlim)
   xlim <- xlim + c(-1, 1) * (extend-1)*trange/2
 
-  if (is.null(ylim)) {
-    ylim <- range(y)
-    if (!missing(ts2)) ylim <- range(c(ylim, range(ts2$y)))
-  }
-
-  # open a new plot if needed
-  if (add != TRUE) {
-    plot(0, 0, xlim = xlim, ylim = ylim, axes = FALSE,
-         type = "n", bty = "n", xlab = xlab, ylab = ylab,
-         main = main, ...)
-    axis(1)
-    axis(2, lty = 0, las = 1)
-    abline(h = par("usr")[3])
-    if (grid == TRUE) grid(lwd = grid.lwd, col = grid.col)
-  }
-
   if (mode(col) == "character") {
     cols <- col
   } else {
@@ -211,21 +203,73 @@ plot_ts <- function(ts1, ts2,
   icol <- 1
   if (is.numeric(col)) icol <- col
 
+  # store the current graphical parameters
+  retire <- par(no.readonly = TRUE)
+
   m <- 1
   if (!missing(ts2)) m <- 2
 
+  if (add != TRUE) {
+    if (split == TRUE) {
+      par(mfrow = c(m, 1))
+      par(mar = c(0, 0, 0, 0), oma = c(4, 4, 0.5, 0.5))
+    }
+  }
+
+  yfix <- TRUE
+  if (is.null(ylim)) yfix <- FALSE
+  if (yfix != TRUE) {
+    if (!missing(ts2) & split != TRUE) {
+      ylim <- range(c(ts1$y, ts2$y))
+      yfix <- TRUE
+    } else {
+      ylim <- range(ts1$y)
+    }
+  }
+
   for (i in 1:m) {
 
-  if (i > 1) {
-    y <- ts2$y
-    n <- length(y)
-    t <- 1:n
-    if ("t" %in% names(ts2)) t <- ts2$t
-    dy <- array(0, dim = n)
-    if ("dy" %in% names(ts2)) dy <- ts2$dy
-    dt <- array(0, dim = n)
-    if ("dt" %in% names(ts2)) dt <- ts2$dt
-    icol <- icol + 1
+    if (i > 1) {
+      y <- ts2$y
+      n <- length(y)
+      t <- 1:n
+      if ("t" %in% names(ts2)) t <- ts2$t
+      dy <- array(0, dim = n)
+      if ("dy" %in% names(ts2)) dy <- ts2$dy
+      dt <- array(0, dim = n)
+      if ("dt" %in% names(ts2)) dt <- ts2$dt
+      icol <- icol + 1
+    }
+
+    # open a new plot if needed
+    if (add != TRUE) {
+      if (i == 1 | split == TRUE) {
+        if (yfix != TRUE)
+          ylim <- range(y)
+        plot(0, 0, xlim = xlim, ylim = ylim, axes = FALSE,
+             type = "n", bty = "n", xlab = "", ylab = ylab,
+             main = main, ...)
+        axis(2, lty = 0, las = 1)
+        abline(h = par("usr")[3])
+        if (grid == TRUE) grid(lwd = grid.lwd, col = grid.col)
+      }
+    }
+
+
+  # draw 'horizon' if requested
+  bottom <- NULL
+  if (mode(horizon) == "logical" & horizon == TRUE)
+    bottom <- par("usr")[3]
+  if (mode(horizon) == "numeric")
+    bottom <- horizon
+
+  col.fill <- rgb(t(col2rgb(cols[icol])), alpha = 50,
+                  maxColorValue = 255)
+
+  if (!is.null(bottom)) {
+    pt <- c(t[1], t, t[n])
+    py <- c(bottom, y, bottom)
+    polygon(pt, py, col = col.fill, border = NA)
   }
 
   # draw points or lines
@@ -246,4 +290,10 @@ plot_ts <- function(ts1, ts2,
                col = cols[icol], lwd = max(1, lwd-1))
     }
   }
+  axis(1)
+  mtext(xlab, side = 1, line = 4)
+
+  # restore graphical parameters
+  par(retire)
+
 }

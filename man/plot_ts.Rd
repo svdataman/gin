@@ -7,7 +7,8 @@
 plot_ts(ts1, ts2, xlim = NULL, ylim = NULL, xlab = "time",
   ylab = "y(t)", grid = TRUE, add = FALSE, pch = 16, cex = 1,
   lwd = 3, col = NULL, main = "", extend = 1, error = TRUE,
-  type = "p", grid.lwd = 1, grid.col = "lightgray", ...)
+  type = "p", grid.lwd = 1, grid.col = "lightgray", horizon = FALSE,
+  ...)
 }
 \arguments{
 \item{ts1}{(data frame) data for time series.}
@@ -38,12 +39,16 @@ default.}
 
 \item{extend}{(float) Extend the time axis by this factor.}
 
+\item{error}{(logical) plot errors if available?}
+
 \item{type}{(character) What type of plot. See \code{?plot}.
 Options are "p", "b", "l", "n".}
 
 \item{grid.lwd}{(float) The line width (>0) for the grid.}
 
 \item{grid.col}{(colour) The colour of the grid.}
+
+\item{horizon}{(logical or float) make a 'horizon' style plot?}
 
 \item{...}{(anything) any other graphical keywords to be passed to
 \code{plot(...)}}
