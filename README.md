@@ -190,6 +190,9 @@ and 99.7% of the mass).
 * Compute ACFs based on FT or specified PSD
 * Allow for time binning (not point samples in time)
 * Allow for lognormal process
+* plot_density: fix median plotting when logx = TRUE
+* add logxy with 2D density plots
+* add a load_ts utility to produce {t, y, dy} data frame
 
 ## References
 
