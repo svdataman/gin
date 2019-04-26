@@ -11,11 +11,11 @@ gp_logPosterior(theta, acv.model = NULL, tau = NULL, dat = NULL,
 \item{theta}{(vector) parameters for covariance function
 the first element is the mean value mu}
 
-\item{acv.model}{(name) name of the function to compute ACV(tau|theta)}
+\item{acv.model}{(name) name of the function to compute ACV(tau | theta)}
 
-\item{tau}{(matrix) N*N array of lags at which to compute ACF}
+\item{tau}{(matrix) N*N matrix of lags at which to compute ACF}
 
-\item{dat}{(data frame) an N * 3 data frame/array, 3 columns}
+\item{dat}{(data frame) an N * 3 matrix of data: 3 columns}
 
 \item{PDcheck}{(logical) use Matrix::nearPD to coerse the matrix}
 

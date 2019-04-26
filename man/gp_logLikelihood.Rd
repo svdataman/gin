@@ -11,11 +11,11 @@ gp_logLikelihood(theta, acv.model = NULL, tau = NULL, dat = NULL,
 \item{theta}{(vector) parameters for covariance function
 the first element is the mean value mu}
 
-\item{acv.model}{(name) name of the function to compute ACV(tau|theta)}
+\item{acv.model}{(name) name of the function to compute ACV(tau | theta)}
 
-\item{tau}{(matrix) N*N array of lags at which to compute ACF}
+\item{tau}{(matrix) N*N matrix of lags at which to compute ACF}
 
-\item{dat}{(data frame) an N * 3 data frame/array, 3 columns}
+\item{dat}{(data frame) an N * 3 matrix of data: 3 columns}
 
 \item{PDcheck}{(logical) use Matrix::nearPD to coerse the matrix}
 
@@ -31,9 +31,9 @@ scalar value of log[likelihood(theta)]
 
  Compute the log likelihood for Gaussian Process model with parameters theta
  given data \eqn{\{t, y, dy\}} and an (optional) N*N matrix of lags, tau. See
- algorithm 2.1 of Rasmussen & Williams (2006). The input data frame 'dat'
+ algorithm 2.1 of Rasmussen & Williams (2006). The input data matrix \code{dat}
  should contain three columns: \code{t}, \code{y}, \code{dy}. \code{t[i]} and
- \code{y[i]} give the times and the measured values of those times. \code{dy}
+ \code{y[i]} give the times and the measured values at those times. \code{dy}
  gives the 'error' on the measurements \code{y}, assumed to be independent
  Gaussian errors wih standard deviation \code{dy}. If \code{dy} is not
  present we assumine \code{dy[i] = 0} for all \code{i}. The columns \code{t},

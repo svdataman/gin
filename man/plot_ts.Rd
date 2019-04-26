@@ -7,8 +7,8 @@
 plot_ts(ts1, ts2, xlim = NULL, ylim = NULL, xlab = "time",
   ylab = "y(t)", grid = TRUE, add = FALSE, pch = 16, cex = 1,
   lwd = 3, col = NULL, main = "", extend = 1, error = TRUE,
-  type = "p", grid.lwd = 1, grid.col = "lightgray", horizon = FALSE,
-  ...)
+  type = "p", grid.lwd = 1, grid.col = "lightgray",
+  horizon = FALSE, split = FALSE, cex.lab = 1.5, ...)
 }
 \arguments{
 \item{ts1}{(data frame) data for time series.}
@@ -49,6 +49,9 @@ Options are "p", "b", "l", "n".}
 \item{grid.col}{(colour) The colour of the grid.}
 
 \item{horizon}{(logical or float) make a 'horizon' style plot?}
+
+\item{cex.lab}{(float) The magnification to be used for x and y labels
+relative to the current setting of cex.}
 
 \item{...}{(anything) any other graphical keywords to be passed to
 \code{plot(...)}}

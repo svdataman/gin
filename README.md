@@ -19,6 +19,8 @@ The current version includes the top-level functions:
 
 * plot_snake - plot a 'snake' representing the mean and std.dev of a GP.
 
+* ts_load - load a plain text data file into an array ready for analysis. 
+
 And some lower-level functions that do the heavy-lifting
 
 * gp_logLikelihood - compute Gaussian log likelihood given data and model.
@@ -186,8 +188,8 @@ and 99.7% of the mass).
 
 ## To do
 
-* Add more ACV functions
-* Compute ACFs based on FT or specified PSD
+* Inclide a range of ready-to-use ACV functions
+* Compute ACFs based on FT of specified PS
 * Allow for time binning (not point samples in time)
 * Allow for lognormal process
 

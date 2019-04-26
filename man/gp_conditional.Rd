@@ -11,9 +11,9 @@ gp_conditional(theta, acv.model = NULL, dat = NULL, t.star = NULL,
 \item{theta}{(vector) parameters for covariance function
 the first element is the mean value mu}
 
-\item{acv.model}{(name) name of the function to compute ACV(tau|theta)}
+\item{acv.model}{(name) name of the function to compute ACV(tau | theta)}
 
-\item{dat}{(data frame) an N * 3 data frame/array, 3 columns}
+\item{dat}{(data frame) an N * 3 matrix of data: 3 columns}
 
 \item{t.star}{(vector) times at which to compute the simulation(s).}
 

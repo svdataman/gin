@@ -33,7 +33,7 @@
 #'
 #' @export
 plot_snake <- function(dat,
-                       sigma = 1,
+                       sigma = c(1),
                        add = FALSE,
                        col.line = 1,
                        col.fill = NULL,
@@ -43,13 +43,24 @@ plot_snake <- function(dat,
 
   # check arguments
   if (!exists('dat')) {stop('** Missing dat.')}
-  if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
-  if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
-  if (!("dy" %in% names(dat))) {
-    if ("cov" %in% names(dat)) {
-      dat$dy <- sqrt( abs( diag(dat$cov) ) )
-    } else {
-      stop('** Missing dat$dy and dat$cov - must include one of these.')
+
+  # is this a gp object (list format) or a data array?
+  is.gp <- mode(dat) == "list"
+
+  # if data array, check the contents
+  if (is.gp == FALSE) {
+    if (!("t" %in% colnames(dat))) {stop('** Missing dat$t.')}
+    if (!("y" %in% colnames(dat))) {stop('** Missing dat$y.')}
+    if (!("dy" %in% colnames(dat))) {stop('** Missing dat$dy.')}
+  } else {
+    if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
+    if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
+    if (!("dy" %in% names(dat))) {
+      if ("cov" %in% names(dat)) {
+        dat$dy <- sqrt( abs( diag(dat$cov) ) )
+      } else {
+        stop('** Missing dat$dy and dat$cov - must include one of these.')
+      }
     }
   }
 
@@ -73,22 +84,30 @@ plot_snake <- function(dat,
   col.fill <- rgb(t(col2rgb(col.fill)), alpha = 50,
                   maxColorValue = 255)
 
+  # loop over multiple sigma bands, if needed
+  n.bands <- length(sigma)
+  for (i in 1:n.bands) {
+    # prepare the snake (moving right along the bottom edge, then left along the
+    # top edge)
+    xx <- c(t, rev(t))
+    yy <- c(y - sigma[i] * dy, rev(y + sigma[i] * dy))
 
-  # prepare the snake (moving right along the bottom edge, then left along the
-  # top edge)
-  xx <- c(t, rev(t))
-  yy <- c(y - sigma*dy, rev(y + sigma*dy))
+    # open a new plot if needed
+    if (add != TRUE) {
+      if (i == 1)
+        plot(xx, yy, type = "n", bty = "n", ...)
+    }
 
-  # open a new plot if needed
-  if (add != TRUE) {
-    plot(xx, yy, type = "n", bty = "n", ...)
+    # now add the snake
+    polygon(xx,
+            yy,
+            col = col.fill,
+            border = col.border,
+            lwd = 2)
   }
 
-  # now add the snake
-  polygon(xx, yy, col = col.fill, border = col.border, lwd = 2)
-
   # now add the line through the centre
-  lines(gp$t, gp$y, col = col.line, lwd = 3)
+  lines(t, y, col = col.line, lwd = 3)
 
   # all done
 }
@@ -126,6 +145,8 @@ plot_snake <- function(dat,
 #' @param grid.col (colour) The colour of the grid.
 #' @param horizon (logical or float) make a 'horizon' style plot?
 #' @param error (logical) plot errors if available?
+#' @param cex.lab (float) The magnification to be used for x and y labels
+#'                 relative to the current setting of cex.
 #' @inheritParams plot_snake
 #'
 #' @return
@@ -167,11 +188,12 @@ plot_ts <- function(ts1, ts2,
                     grid.col = "lightgray",
                     horizon = FALSE,
                     split = FALSE,
+                    cex.lab = 1.5,
                      ...) {
 
   # check arguments
   if (!exists('ts1')) {stop('** Missing ts1.')}
-  if (!("y" %in% names(ts1))) stop('** Missing ts1$y.')
+  if (!("y" %in% colnames(ts1))) stop('** Missing ts1$y.')
   n <- length(ts1$y)
   y <- ts1$y
   t <- 1:n
@@ -180,8 +202,8 @@ plot_ts <- function(ts1, ts2,
 
   dy <- array(0, dim = n)
   dt <- array(0, dim = n)
-  if ("dy" %in% names(ts1)) dy <- ts1$dy
-  if ("dt" %in% names(ts1)) dt <- ts1$dt
+  if ("dy" %in% colnames(ts1)) dy <- ts1$dy
+  if ("dt" %in% colnames(ts1)) dt <- ts1$dt
   if (error == FALSE) {
     dy <- 0
     dt <- 0
@@ -212,7 +234,7 @@ plot_ts <- function(ts1, ts2,
   if (add != TRUE) {
     if (split == TRUE) {
       par(mfrow = c(m, 1))
-      par(mar = c(0, 0, 0, 0), oma = c(4, 4, 0.5, 0.5))
+#      par(mar = c(0, 0, 0, 0), oma = c(5, 5, 0.5, 0.5))
     }
   }
 
@@ -233,11 +255,11 @@ plot_ts <- function(ts1, ts2,
       y <- ts2$y
       n <- length(y)
       t <- 1:n
-      if ("t" %in% names(ts2)) t <- ts2$t
+      if ("t" %in% colnames(ts2)) t <- ts2$t
       dy <- array(0, dim = n)
-      if ("dy" %in% names(ts2)) dy <- ts2$dy
+      if ("dy" %in% colnames(ts2)) dy <- ts2$dy
       dt <- array(0, dim = n)
-      if ("dt" %in% names(ts2)) dt <- ts2$dt
+      if ("dt" %in% colnames(ts2)) dt <- ts2$dt
       icol <- icol + 1
     }
 
@@ -248,7 +270,7 @@ plot_ts <- function(ts1, ts2,
           ylim <- range(y)
         plot(0, 0, xlim = xlim, ylim = ylim, axes = FALSE,
              type = "n", bty = "n", xlab = "", ylab = ylab,
-             main = main, ...)
+             main = main, cex.lab = cex.lab, ...)
         axis(2, lty = 0, las = 1)
         abline(h = par("usr")[3])
         if (grid == TRUE) grid(lwd = grid.lwd, col = grid.col)
@@ -291,9 +313,9 @@ plot_ts <- function(ts1, ts2,
     }
   }
   axis(1)
-  mtext(xlab, side = 1, line = 4)
+  mtext(xlab, side = 1, line = 3, cex = cex.lab)
 
   # restore graphical parameters
-  par(retire)
+  # par(retire)
 
 }

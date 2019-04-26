@@ -5,13 +5,13 @@
 \title{Find Maximum Posterior solution for a Gaussian Process model.}
 \usage{
 gp_fit(theta.0, acv.model = NULL, dat = NULL, logPrior = NULL,
-  method = "Nelder-Mead", trace = 0, theta.scale = NULL, maxit = 5000,
-  chatter = 0, PDcheck = FALSE)
+  method = "Nelder-Mead", trace = 0, theta.scale = NULL,
+  maxit = 5000, chatter = 0, PDcheck = FALSE)
 }
 \arguments{
-\item{acv.model}{(name) name of the function to compute ACV(tau|theta)}
+\item{acv.model}{(name) name of the function to compute ACV(tau | theta)}
 
-\item{dat}{(data frame) an N * 3 data frame/array, 3 columns}
+\item{dat}{(data frame) an N * 3 matrix of data: 3 columns}
 
 \item{logPrior}{(name) Name of the function returning the log Prior density.}
 

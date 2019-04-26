@@ -14,11 +14,10 @@
 #'
 #' @param theta     (vector) parameters for covariance function
 #'                   the first element is the mean value mu
-#' @param acv.model (name) name of the function to compute ACV(tau|theta)
-#' @param tau       (matrix) N*N array of lags at which to compute ACF
-#' @param dat       (data frame) an N * 3 data frame/array, 3 columns
-#                    give the times, measurement and errors of
-#                    the n data points.
+#' @param acv.model (name) name of the function to compute ACV(tau | theta)
+#' @param tau       (matrix) N*N matrix of lags at which to compute ACF
+#' @param dat       (data frame) an N * 3 matrix of data: 3 columns
+#                    (time, measurement, error) over N data point.
 #' @param PDcheck   (logical) use Matrix::nearPD to coerse the matrix
 #                     C to be positive definite
 #' @param chatter   (integer) higher values give more run-time feedback
@@ -29,9 +28,9 @@
 #' @section Notes:
 #'  Compute the log likelihood for Gaussian Process model with parameters theta
 #'  given data \eqn{\{t, y, dy\}} and an (optional) N*N matrix of lags, tau. See
-#'  algorithm 2.1 of Rasmussen & Williams (2006). The input data frame 'dat'
+#'  algorithm 2.1 of Rasmussen & Williams (2006). The input data matrix \code{dat}
 #'  should contain three columns: \code{t}, \code{y}, \code{dy}. \code{t[i]} and
-#'  \code{y[i]} give the times and the measured values of those times. \code{dy}
+#'  \code{y[i]} give the times and the measured values at those times. \code{dy}
 #'  gives the 'error' on the measurements \code{y}, assumed to be independent
 #'  Gaussian errors wih standard deviation \code{dy}. If \code{dy} is not
 #'  present we assumine \code{dy[i] = 0} for all \code{i}. The columns \code{t},
@@ -42,11 +41,11 @@
 #'
 #' @export
 gp_logLikelihood <- function(theta,
-                    acv.model = NULL,
-                    tau = NULL,
-                    dat = NULL,
-                    PDcheck = TRUE,
-                    chatter = 0) {
+                             acv.model = NULL,
+                             tau = NULL,
+                             dat = NULL,
+                             PDcheck = TRUE,
+                             chatter = 0) {
 
   # For multivariate normal distribution the likelihood is
   #   L(\theta) = (2\pi)^{-N/2} * det(C)^{-1/2} *
@@ -111,7 +110,7 @@ gp_logLikelihood <- function(theta,
   # the extract the error scaling parameter (nu) from the vector theta,
   # Then remove these the theta, so now these only contains parameter for
   # the ACV function
-  if (chatter > 1) { cat(theta) }
+  if (chatter > 1) { cat('-- ', theta) }
   mu <- theta[1]
   nu <- abs(theta[2])
   theta <- theta[c(-1, -2)]
@@ -190,12 +189,12 @@ gp_logLikelihood <- function(theta,
 #'
 #' @export
 gp_logPosterior <- function(theta,
-                         acv.model = NULL,
-                         tau = NULL,
-                         dat = NULL,
-                         PDcheck = TRUE,
-                         chatter = 0,
-                         logPrior = NULL) {
+                            acv.model = NULL,
+                            tau = NULL,
+                            dat = NULL,
+                            PDcheck = TRUE,
+                            chatter = 0,
+                            logPrior = NULL) {
 
   # check arguments
   if (missing(theta)) {stop('** Missing theta input.')}
@@ -222,8 +221,8 @@ gp_logPosterior <- function(theta,
     llike <- 0
   } else {
     llike <- gp_logLikelihood(theta, acv.model, tau = tau,
-                   dat = dat, PDcheck = PDcheck,
-                   chatter = chatter)
+                              dat = dat, PDcheck = PDcheck,
+                              chatter = chatter)
   }
 
   # posterior ~ likelihood * prior
@@ -406,6 +405,7 @@ gp_fit <- function(theta.0,
 # History:
 #  16/12/13 - v0.1 - First working version
 #  05/07/16 - v0.2 - Major re-write
+#  31/12/18 - v0.3 - fixed bug in line to check for missing dy
 #
 # Simon Vaughan, University of Leicester
 # -----------------------------------------------------------
@@ -447,10 +447,10 @@ gp_fit <- function(theta.0,
 #'
 #' @export
 gp_conditional <- function(theta,
-                       acv.model = NULL,
-                       dat = NULL,
-                       t.star = NULL,
-                       PDcheck = FALSE) {
+                           acv.model = NULL,
+                           dat = NULL,
+                           t.star = NULL,
+                           PDcheck = FALSE) {
 
   # Use the following matricies each defined as
   #
@@ -461,7 +461,6 @@ gp_conditional <- function(theta,
   #   t.star  - times at predictions
   # then the matrices are:
   #   K     - ACV(t.obs, t.obs)
-  #   K.ik  - ACV(t.obs, t.star)
   #   K.ki  - ACV(t.star, t.obs)
   #   K.kk  - ACV(t.star, t.star)
 
@@ -477,9 +476,12 @@ gp_conditional <- function(theta,
   # if times of predictions are not given, use times of the observations
   if (is.null(t.star)) { t.star <- dat$t }
 
+  # if errors are not supplied, set them to zero
+  if (!("dy" %in% names(dat))) { dat$dy <- rep(0, length(dat$t))}
+
   # first, extract the mean (mu) from the parameter vector theta,
   # the extract the error scaling parameter (nu) from the vector theta,
-  # Then remove these the theta, so now theta only contains parameter for
+  # Then remove these from theta, so now theta only contains parameters for
   # the ACV function
   mu <- theta[1]
   nu <- theta[2]
@@ -494,6 +496,11 @@ gp_conditional <- function(theta,
   tau.kk <- gp_lagMatrix(t.star, t.star)
   K.ki <- acv.model(theta, tau.ki)
   K.kk <- acv.model(theta, tau.kk)
+
+#  cat('tau.ki:', str(tau.ki), fill = TRUE)
+#  cat('tau.kk:', str(tau.kk), fill = TRUE)
+#  cat('K.ki:', str(K.ki), fill = TRUE)
+#  cat('K.kk:', str(K.kk), fill = TRUE)
 
   # clean up memory
   rm(tau.obs, tau.ki, tau.kk)
@@ -541,6 +548,8 @@ gp_conditional <- function(theta,
 # History:
 #  17/12/13 - v0.1 - First working version
 #  05/07/16 - v0.2 - Major re-write
+#  20/12/17 - v0.3 - Changed rmvnorm method to "eigen" which is
+#                     much more stable.
 #
 # Simon Vaughan, University of Leicester
 # -----------------------------------------------------------
@@ -620,19 +629,21 @@ gp_sim <- function(theta,
   m <- length(t.star)
 
   if (prior.sim == FALSE) {
-  # compute the mean and covariance matrix for the GP at times t.star
+    # compute the mean and covariance matrix for the GP at times t.star
     gp.out <- gp_conditional(theta, acv.model, dat, t.star)
   } else {
     tau.kk <- gp_lagMatrix(t.star, t.star)
+    theta.prime <- theta[-c(1,2)]
     gp.out <- list(y = rep(theta[1], m),
-                   cov = acv.model(theta[-c(1, 2)], tau.kk))
+                   cov = acv.model(theta.prime, tau.kk))
     rm(tau.kk)
   }
 
   # compute each time series, an m-vector drawn from the
   # multivariate (m-dimensional) Gaussian distribution.
+  #gp.out$cov <- Matrix::nearPD(as.matrix(gp.out$cov))$mat
   y.out <- mvtnorm::rmvnorm(n = N.sim, mean = gp.out$y,
-                            sigma = gp.out$cov, method = "chol")
+                            sigma = gp.out$cov, method = "eigen")
   y.out <- t(y.out)
 
   # plot all the time series
