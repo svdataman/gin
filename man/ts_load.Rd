@@ -16,7 +16,7 @@ ts_load(filename = NA, header = FALSE, csv = FALSE, cols = NA)
 \item{cols}{(vector) list of columns to read}
 }
 \value{
-array with three named columns \code{t, y, dy}.
+matrix (2D array) with three named columns named \code{t, y, dy}.
 }
 \description{
 \code{ts_load} returns a standard-format data array

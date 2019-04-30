@@ -80,12 +80,12 @@ Using the ACV model and parameters (theta) as above, and the grid of times (t) w
 
 ```
   # produce Gaussian vector (simulation)
-  y <- gp_sim(theta, acv.model = acv, t.star = t)
+  y <- gin::gp_sim(theta, acv.model = acv, t.star = t)
   y <- as.vector(y)
 
   # plot the 'true' curve
   dat <- data.frame(t = t, y = y)
-  plot_ts(dat, type = "l")
+  gin::plot_ts(dat, type = "l")
 ```
 
 ![random](figs/fig3.png)
@@ -95,7 +95,7 @@ Using the ACV model and parameters (theta) as above, and the grid of times (t) w
 The package comes with a dataset called drw. This shows 40 observations of a random process. The drw data.frame has 3 columns: t (time), y (value), dy (error). Let's plot the data
 
 ```R
-  plot_ts(drw, col = "black", cex.lab=1.4)
+  gin::plot_ts(drw, col = "black", cex.lab=1.4)
 ```
 
 ![data](figs/fig1.png)
@@ -104,7 +104,7 @@ Using the ACV model above, and the values for theta as our starting guess, we fi
 
 ```R
    # fit the model to the data, find Max.Like parameter values
-   result <- gp_fit(theta, acv.model = acv, dat = drw)
+   result <- gin::gp_fit(theta, acv.model = acv, dat = drw)
 ```
 
 This should find the maximum likelihood solution. The ACV parameters (for of them in this case) are in result$par. We can use this to reconstruct the GP as follows. 
@@ -113,14 +113,14 @@ We can use the gp_conditional function to compute the mean and covariance of the
 
 ```R
    # reconstruct process: compute 'conditional' mean and covariance
-   gp <- gp_conditional(result$par, acv.model = acv, drw, t.star = t)
+   gp <- gin::gp_conditional(result$par, acv.model = acv, dat = drw, t.star = t)
 ```
 
 and now we can overlay the conditional model 
 
 ```R
    # plot a 'snake' showing mean +/- std.dev
-   plot_snake(gp, add = TRUE, col.line = 3)
+   gin::plot_snake(gp, add = TRUE, col.line = 3)
 ```
 
 ![model](figs/fig2.png)
@@ -128,7 +128,7 @@ and now we can overlay the conditional model
 We can also add psuedo-random realisations of this process (conditional on the data)
 
 ```R
-   y.sim <- gp_sim(result$par, dat = drw, acv.model = acv, t.star = t, 
+   y.sim <- gin::gp_sim(result$par, dat = drw, acv.model = acv, t.star = t, 
                    N.sim = 5, plot = FALSE)
   for (i in 1:5) lines(t, y.sim[, i], col = i)
 ```
@@ -157,8 +157,8 @@ In general, to do this we need an MCMC tool to sample from the posterior. Here I
    # Use gw.mcmc to generate parameter samples
    chain <- tonic::gw_sampler(gp_logPosterior, theta.0 = theta,
                               acv.model = acv, logPrior = logPrior,
-                              dat = dat, burn.in = 1e4,
-                              nsteps = 20e4,
+                              dat = drw, burn.in = 1e4,
+                              nsteps = 40e4,
                               chatter = 1, thin = 10)
 ```
 
@@ -192,9 +192,7 @@ and 99.7% of the mass).
 * Compute ACFs based on FT of specified PS
 * Allow for time binning (not point samples in time)
 * Allow for lognormal process
-* plot_density: fix median plotting when logx = TRUE
-* add logxy with 2D density plots
-* add a load_ts utility to produce {t, y, dy} data frame
+* use matrix rather than data.frame format for data (speed)
 
 ## References
 

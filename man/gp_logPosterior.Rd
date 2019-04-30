@@ -15,7 +15,7 @@ the first element is the mean value mu}
 
 \item{tau}{(matrix) N*N matrix of lags at which to compute ACF}
 
-\item{dat}{(data frame) an N * 3 matrix of data: 3 columns}
+\item{dat}{(matrix) an N * 3 matrix of data: 3 columns}
 
 \item{PDcheck}{(logical) use Matrix::nearPD to coerse the matrix}
 

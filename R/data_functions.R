@@ -16,7 +16,7 @@
 #' @param cols      (vector) list of columns to read
 #'
 #' @return
-#'  array with three named columns \code{t, y, dy}.
+#'  matrix (2D array) with three named columns named \code{t, y, dy}.
 #'
 #' @section Notes:
 #'  Load time series data from a multi-column ASCII file. The input data file
@@ -76,7 +76,7 @@ ts_load <- function(filename = NA, header = FALSE, csv = FALSE, cols = NA) {
   colnames(dat) <- cnames
 
   # return the data array in matrix format
-  return(data.frame(dat))
+  return(data.matrix(dat))
 
 }
 # -----------------------------------------------------------

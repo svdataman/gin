@@ -8,7 +8,7 @@ plot_snake(dat, sigma = c(1), add = FALSE, col.line = 1,
   col.fill = NULL, col.border = NULL, ...)
 }
 \arguments{
-\item{dat}{(data frame) data for time series.}
+\item{dat}{(data frame/matrix) data for time series.}
 
 \item{sigma}{(float) Plot the +/-sigma band (>0).}
 

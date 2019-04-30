@@ -4,14 +4,14 @@
 \alias{plot_ts}
 \title{Nice plot of time series data}
 \usage{
-plot_ts(ts1, ts2, xlim = NULL, ylim = NULL, xlab = "time",
+plot_ts(ts1, ts2 = NULL, xlim = NULL, ylim = NULL, xlab = "time",
   ylab = "y(t)", grid = TRUE, add = FALSE, pch = 16, cex = 1,
   lwd = 3, col = NULL, main = "", extend = 1, error = TRUE,
   type = "p", grid.lwd = 1, grid.col = "lightgray",
   horizon = FALSE, split = FALSE, cex.lab = 1.5, ...)
 }
 \arguments{
-\item{ts1}{(data frame) data for time series.}
+\item{ts1}{(matrix) data for time series.}
 
 \item{ts2}{(data frame) option data for second time series.}
 
@@ -68,14 +68,14 @@ frame
 }
 \section{Notes}{
 
-Input data frames: note that the input data \code{dat} is not a traditional
+Input data: note that the input data \code{dat} is not a traditional
 \code{R} time series object. Such objects are only suitable for regularly
 sampled data. These plotting functions are designed to work with data of
 arbitrary sampling, we therefore need to explicitly list times and values.
-The input objects are therefore data.frames with at least two columns which
-much be called \code{t} (time) and \code{y} (value). An error of the value
+The input objects is a matrix with at least two columns
+called \code{t} (time) and \code{y} (value). An error of the value
 may be provided by a \code{dy} column. If the times are not points but bins
-of finite width, the width of each time bin may be specified with the
+of finite width, the width of each time bin may be specified with a
 \code{dt} column. Any other columns are ignored.
 }
 

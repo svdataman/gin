@@ -1,6 +1,5 @@
 
 # -----------------------------------------------------------
-#
 # History:
 #  16/12/13 - v0.1 - First working version
 #  04/07/16 - v0.2 - Major ewrite
@@ -16,7 +15,7 @@
 #'                   the first element is the mean value mu
 #' @param acv.model (name) name of the function to compute ACV(tau | theta)
 #' @param tau       (matrix) N*N matrix of lags at which to compute ACF
-#' @param dat       (data frame) an N * 3 matrix of data: 3 columns
+#' @param dat       (matrix) an N * 3 matrix of data: 3 columns
 #                    (time, measurement, error) over N data point.
 #' @param PDcheck   (logical) use Matrix::nearPD to coerse the matrix
 #                     C to be positive definite
@@ -44,7 +43,7 @@ gp_logLikelihood <- function(theta,
                              acv.model = NULL,
                              tau = NULL,
                              dat = NULL,
-                             PDcheck = TRUE,
+                             PDcheck = FALSE,
                              chatter = 0) {
 
   # For multivariate normal distribution the likelihood is
@@ -76,29 +75,30 @@ gp_logLikelihood <- function(theta,
   #  where z = L^{-1} y', and y' = Lz. We can find z using
   #   z = solve(L,y') where y' = y - mu.
 
-
   # check arguments
   if (missing(theta)) {stop('** Missing theta input.')}
   if (!all(is.finite(theta))) {stop('** Non-finite values in theta.')}
   if (is.null(dat)) {stop('** Missing dat.')}
-  if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
-  if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
+  if (NCOL(dat) < 2) {stop('** Missing columns in dat.')}
   if (missing(acv.model)) stop('Must specify name of ACV function')
   if (!exists('acv.model')) stop('The specified ACV function does not exist.')
 
-  # length of data vector(s)
-  n <- length(dat$y)
+  # extract data
+  t <- dat[, 1]
+  y <- dat[, 2]
+  n <- length(y)
 
-  # if there are no errors, and the dat$dy column is
+  # if there are no errors, and the dy column is
   # missing, make a column of zeroes.
-  if (!("dy" %in% colnames(dat))) {
-    dat$dy <- array(0, n)
+  if (NCOL(dat) == 2) {
+    dy <- array(0, n)
+  } else {
+    dy <- dat[, 3]
   }
-  dy <- dat$dy
 
   # if n * n array tau is not present then make one
   if (is.null(tau)) {
-    tau <- gp_lagMatrix(dat$t)
+    tau <- gp_lagMatrix(t)
   }
 
   # make sure y and tau have matching lengths
@@ -116,7 +116,7 @@ gp_logLikelihood <- function(theta,
   theta <- theta[c(-1, -2)]
 
   # now subtract the mean from the data: y <- (y - mu)
-  y <- dat$y - mu
+  y <- y - mu
 
   # compute the covariance matrix C as C[i,j] = ACV(tau[i,j])
   # using the remaining parameters
@@ -199,11 +199,6 @@ gp_logPosterior <- function(theta,
   # check arguments
   if (missing(theta)) {stop('** Missing theta input.')}
   if (!all(is.finite(theta))) {stop('** Non-finite values in theta.')}
-  if (is.null(dat)) {stop('** Missing dat.')}
-  if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
-  if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
-  if (missing(acv.model)) stop('Must specify name of ACV function')
-  if (!exists('acv.model')) stop('The specified ACV function does not exist.')
 
   if (!exists('gp_logLikelihood'))
     stop('The gp_logLikelihood function does not exist.')
@@ -321,9 +316,9 @@ gp_lagMatrix <- function(x, y) {
 #'  function is supplied, the result is equivalent to Maximum Likelihood
 #'  Estimation.
 #'
-#'  @seealso \code{\link{gp_logLikelihood}}, \code{\link{gp_logPosterior}}
+#' @seealso \code{\link{gp_logLikelihood}}, \code{\link{gp_logPosterior}}
 #'
-#'  @export
+#' @export
 gp_fit <- function(theta.0,
                    acv.model = NULL,
                    dat = NULL,
@@ -339,23 +334,22 @@ gp_fit <- function(theta.0,
   if (missing(theta.0)) {stop('** Missing theta.0 input.')}
   if (!all(is.finite(theta.0))) {stop('** Non-finite values in theta.')}
   if (is.null(dat)) {stop('** Missing dat.')}
-  if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
-  if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
+  if (NCOL(dat) < 2) {stop('** Missing columns in dat.')}
   if (is.null(theta.scale)) { theta.scale <- rep(1, length(theta.0)) }
-  if (missing(acv.model)) stop('Must specify name of ACV function')
-  if (!exists('acv.model')) stop('The specified ACV function does not exist.')
+  if (missing(acv.model)) stop('**Must specify name of ACV function')
+  if (!exists('acv.model')) stop('** The specified ACV function does not exist.')
 
   # no. parameters?
   n.parm <- length(theta.0)
 
   # compute all the time differences: tau[i,j] = |t[j] - t[i]|
-  tau <- gp_lagMatrix(dat$t)
+  tau <- gp_lagMatrix(dat[, 1])
 
   # check the initial position
   post.0 <- gp_logPosterior(theta.0, tau = tau, dat = dat,
                             acv.model = acv.model)
   if (!is.finite(post.0)) {
-    stop('Non-finite log posterior for initial theta value.')
+    stop('** Non-finite log posterior for initial theta value.')
   }
 
   # perform the fitting
@@ -375,7 +369,7 @@ gp_fit <- function(theta.0,
   # test if Hessian is non-singular. If so, estimate errors using covariance
   # matrix. Otherwise, set errors = 0. The covariance matrix = Inv[ -Hessian ]
   # where Hessian_{ij} = dL^2 / dtheta_i dtheta_j
-  if (class(try(solve(-result$hessian),silent = T)) == "matrix") {
+  if (class(try(solve(-result$hessian), silent = TRUE)) == "matrix") {
     covar <- solve(-result$hessian)
     err <- sqrt(diag(covar))
   } else {
@@ -468,16 +462,25 @@ gp_conditional <- function(theta,
   if (missing(theta)) {stop('** Missing theta argument.')}
   if (!all(is.finite(theta))) {stop('** Non-finite values in theta.')}
   if (is.null(dat)) {stop('** Missing dat.')}
-  if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
-  if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
+  if (NCOL(dat) < 2) {stop('** Missing columns in dat.')}
   if (missing(acv.model)) stop('Must specify name of ACV function')
   if (!exists('acv.model')) stop('The specified ACV function does not exist.')
 
-  # if times of predictions are not given, use times of the observations
-  if (is.null(t.star)) { t.star <- dat$t }
+  # extract data
+  t <- dat[, 1]
+  y <- dat[, 2]
+  n <- length(y)
 
-  # if errors are not supplied, set them to zero
-  if (!("dy" %in% names(dat))) { dat$dy <- rep(0, length(dat$t))}
+    # if times of predictions are not given, use times of the observations
+  if (is.null(t.star)) { t.star <- dat[, 1] }
+
+  # if there are no errors, and the dy column is
+  # missing, make a column of zeroes.
+  if (NCOL(dat) == 2) {
+    dy <- array(0, n)
+  } else {
+    dy <- dat[, 3]
+  }
 
   # first, extract the mean (mu) from the parameter vector theta,
   # the extract the error scaling parameter (nu) from the vector theta,
@@ -488,11 +491,11 @@ gp_conditional <- function(theta,
   theta <- theta[c(-1, -2)]
 
   # compute model covariance matrix at observed delays
-  tau.obs <- gp_lagMatrix(dat$t, dat$t)
+  tau.obs <- gp_lagMatrix(t, t)
   K <- acv.model(theta, tau.obs)
 
   # compute matrix of covariances between observations and predictions
-  tau.ki <- gp_lagMatrix(t.star, dat$t)
+  tau.ki <- gp_lagMatrix(t.star, t)
   tau.kk <- gp_lagMatrix(t.star, t.star)
   K.ki <- acv.model(theta, tau.ki)
   K.kk <- acv.model(theta, tau.kk)
@@ -506,14 +509,14 @@ gp_conditional <- function(theta,
   rm(tau.obs, tau.ki, tau.kk)
 
   # eqn 2.20 of R&W - add the "error" term to the covariance matrix
-  C <- K + nu * dat$dy^2 * diag(1, NCOL(K))
+  C <- K + nu * dy^2 * diag(1, NCOL(K))
   rm(K)
 
   # compute the inverse covariance matrix
   C.inv <- solve(C)
 
   # eqn 2.23 of R&W - predict the mean value at prediction times
-  y.star <- as.vector(K.ki %*% C.inv %*% (dat$y - mu)) + mu
+  y.star <- as.vector(K.ki %*% C.inv %*% (y - mu)) + mu
 
   # eqn 2.24 of R&W - predict the covariances at all prediction times
   cov.star <- K.kk - K.ki %*% C.inv %*% t(K.ki)
@@ -610,19 +613,20 @@ gp_sim <- function(theta,
     prior.sim <- TRUE
   } else {
     prior.sim <- FALSE
-    if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
-    if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
-    n <- length(dat$y)
+    if (NCOL(dat) < 2) {stop('** Missing columns in dat.')}
+    t <- dat[, 1]
+    n <- length(t)
   }
-  if (missing(acv.model)) stop('Must specify name of ACV function')
-  if (!exists('acv.model')) stop('The specified ACV function does not exist.')
+  if (missing(acv.model)) stop('** Must specify name of ACV function')
+  if (!exists('acv.model')) stop('** The specified ACV function does not exist.')
 
   # if times of predictions are not given, use times of the observations
   if (is.null(t.star)) {
     if (is.null(dat)) {
       stop('** Must specify dat and/or t.star.')
+    } else {
+      t.star <- t
     }
-    t.star <- dat$t
   }
 
   # length of data to predict/simulated
@@ -633,7 +637,7 @@ gp_sim <- function(theta,
     gp.out <- gp_conditional(theta, acv.model, dat, t.star)
   } else {
     tau.kk <- gp_lagMatrix(t.star, t.star)
-    theta.prime <- theta[-c(1,2)]
+    theta.prime <- theta[-c(1, 2)]
     gp.out <- list(y = rep(theta[1], m),
                    cov = acv.model(theta.prime, tau.kk))
     rm(tau.kk)
@@ -645,13 +649,6 @@ gp_sim <- function(theta,
   y.out <- mvtnorm::rmvnorm(n = N.sim, mean = gp.out$y,
                             sigma = gp.out$cov, method = "eigen")
   y.out <- t(y.out)
-
-  # plot all the time series
-  if (plot == TRUE) {
-    for (i in 1:N.sim) {
-      lines(t.star, y.out[,i], col = "grey60")
-    }
-  }
 
   # return the results
   return(y.out)

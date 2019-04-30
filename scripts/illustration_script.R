@@ -31,7 +31,7 @@ axis(1, lwd=0, cex.axis=1.5)
 mask <- c(100, 250, 300, 350, 400)
 #points(dat$t[mask], dat$y[mask], cex = 2, pch = 1, lwd = 3)
 
-y <- gp_sim(theta, acv.model = acv, t.star = t)
+y <- gin::gp_sim(theta, acv.model = acv, t.star = t)
 y <- as.vector(y)
 dat <- data.frame(t = t, y = y)
 lines(dat$t, dat$y, lwd = 3, col = "red3")
@@ -58,7 +58,7 @@ m <- 1000
 t <- seq(-0.5, 100.5, length = m)
 
 # produce Gaussian vector (simulation)
-y <- gp_sim(theta, acv.model = acv, t.star = t)
+y <- gin::gp_sim(theta, acv.model = acv, t.star = t)
 y <- as.vector(y)
 dat <- data.frame(t = t, y = y)
 
@@ -102,7 +102,7 @@ points(t, y, pch = 16, cex = 2)
 # plot error bars
 segments(t, y-dy, t, y+dy, lwd=3)
 
-obs <- list(t=t, y=y, dy=dy)
+obs <- data.matrix(data.frame(t=t, y=y, dy=dy))
 
 # ------------------------------------------------
 # --------------------------------------------
@@ -112,7 +112,7 @@ plot(0, 0, type = "n", bty = "n", axes=FALSE, lwd = 2,
 grid()
 axis(1, lwd=0, cex.axis=1.5)
 # reconstruct process: compute 'conditional' mean and covariance
-gp <- gp_conditional(theta, acv.model = acv, obs, t.star = dat$t)
+gp <- gin::gp_conditional(theta, acv.model = acv, dat = obs, t.star = dat$t)
 
 # plot a 'snake' showing mean +/- std.dev
 plot_snake(gp, add = TRUE, col.line = 3, sigma = c(1, 2))

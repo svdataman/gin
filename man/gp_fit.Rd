@@ -11,7 +11,7 @@ gp_fit(theta.0, acv.model = NULL, dat = NULL, logPrior = NULL,
 \arguments{
 \item{acv.model}{(name) name of the function to compute ACV(tau | theta)}
 
-\item{dat}{(data frame) an N * 3 matrix of data: 3 columns}
+\item{dat}{(matrix) an N * 3 matrix of data: 3 columns}
 
 \item{logPrior}{(name) Name of the function returning the log Prior density.}
 
@@ -47,9 +47,8 @@ A list with components (similar to \code{optim}):
  applying \code{optim} on \code{gp_logPosterior}.) If no \code{logPrior}
  function is supplied, the result is equivalent to Maximum Likelihood
  Estimation.
-
- @seealso \code{\link{gp_logLikelihood}}, \code{\link{gp_logPosterior}}
-
- @export
 }
 
+\seealso{
+\code{\link{gp_logLikelihood}}, \code{\link{gp_logPosterior}}
+}

@@ -27,7 +27,7 @@ gp <- gin::gp_conditional(theta, acv.model = acv, d, t.star = 56700:56835)
 gin::plot_snake(gp, add = TRUE, col.line = 3, sigma = c(1, 2))
 
 # replot data
-segments(d$t, d$y-d$dy, d$t, d$y+d$dy, col = "red")
+gin::plot_ts(d, add = TRUE)
 
 # --------------------------------------
 

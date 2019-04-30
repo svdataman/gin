@@ -17,7 +17,7 @@
 #'  actually sqrt(diag(covariance_matrix)). Sigma is a constant (>0) to allow
 #'  one to plot e.g. the +/-2 std.dev band.
 #'
-#' @param dat (data frame) data for time series.
+#' @param dat (data frame/matrix) data for time series.
 #' @param sigma (float) Plot the +/-sigma band (>0).
 #' @param add (logical) if TRUE then start a new plot
 #' @param col.line (colour) Colour of the mean line.
@@ -47,11 +47,12 @@ plot_snake <- function(dat,
   # is this a gp object (list format) or a data array?
   is.gp <- mode(dat) == "list"
 
-  # if data array, check the contents
+  # if data array, check the contents and extract t, y, dy data
   if (is.gp == FALSE) {
-    if (!("t" %in% colnames(dat))) {stop('** Missing dat$t.')}
-    if (!("y" %in% colnames(dat))) {stop('** Missing dat$y.')}
-    if (!("dy" %in% colnames(dat))) {stop('** Missing dat$dy.')}
+    if (NCOL(dat) < 3) {stop('** Missing columns in dat, should be 3.')}
+    t <- dat[, 1]
+    y <- dat[, 2]
+    dy <- dat[, 3]
   } else {
     if (!("t" %in% names(dat))) {stop('** Missing dat$t.')}
     if (!("y" %in% names(dat))) {stop('** Missing dat$y.')}
@@ -62,12 +63,10 @@ plot_snake <- function(dat,
         stop('** Missing dat$dy and dat$cov - must include one of these.')
       }
     }
+    t <- dat$t
+    y <- dat$y
+    dy <- dat$dy
   }
-
-  # extract the data {t, y, dy} to plot
-  t <- dat$t
-  y <- dat$y
-  dy <- dat$dy
 
   # define colours for the plot
   cols <- col.line
@@ -122,7 +121,7 @@ plot_snake <- function(dat,
 #' Makes a nice plot of some time series data. The data are input as a data
 #' frame
 #'
-#' @param ts1 (data frame) data for time series.
+#' @param ts1 (matrix) data for time series.
 #' @param ts2 (data frame) option data for second time series.
 #' @param xlim,ylim (vectors) numeric vectors of length 2, giving the x and y
 #'                     coordinates ranges.
@@ -153,14 +152,14 @@ plot_snake <- function(dat,
 #'   None.
 #'
 #' @section Notes:
-#' Input data frames: note that the input data \code{dat} is not a traditional
+#' Input data: note that the input data \code{dat} is not a traditional
 #' \code{R} time series object. Such objects are only suitable for regularly
 #' sampled data. These plotting functions are designed to work with data of
 #' arbitrary sampling, we therefore need to explicitly list times and values.
-#' The input objects are therefore data.frames with at least two columns which
-#' much be called \code{t} (time) and \code{y} (value). An error of the value
+#' The input objects is a matrix with at least two columns
+#' called \code{t} (time) and \code{y} (value). An error of the value
 #' may be provided by a \code{dy} column. If the times are not points but bins
-#' of finite width, the width of each time bin may be specified with the
+#' of finite width, the width of each time bin may be specified with a
 #' \code{dt} column. Any other columns are ignored.
 #'
 #' @seealso \code{\link{plot_ts}}
@@ -169,7 +168,7 @@ plot_snake <- function(dat,
 #' plot_ts(drw)
 #'
 #' @export
-plot_ts <- function(ts1, ts2,
+plot_ts <- function(ts1, ts2 = NULL,
                     xlim = NULL,
                     ylim = NULL,
                     xlab = "time",
@@ -189,30 +188,49 @@ plot_ts <- function(ts1, ts2,
                     horizon = FALSE,
                     split = FALSE,
                     cex.lab = 1.5,
-                     ...) {
+                    ...) {
 
-  # check arguments
+  # check data series 1
   if (!exists('ts1')) {stop('** Missing ts1.')}
-  if (!("y" %in% colnames(ts1))) stop('** Missing ts1$y.')
-  n <- length(ts1$y)
-  y <- ts1$y
-  t <- 1:n
-
-  if ("t" %in% names(ts1)) t <- ts1$t
+  if (NCOL(ts1) < 2) stop('** Missing columns in ts1.')
+  t <- ts1[, 1]
+  y <- ts1[, 2]
+  n <- length(y)
 
   dy <- array(0, dim = n)
   dt <- array(0, dim = n)
-  if ("dy" %in% colnames(ts1)) dy <- ts1$dy
-  if ("dt" %in% colnames(ts1)) dt <- ts1$dt
+  if (NCOL(ts1) > 2) dy <- ts1[, 3]
+  if (NCOL(ts1) > 3) dt <- ts1[, 4]
   if (error == FALSE) {
     dy <- 0
     dt <- 0
   }
 
+  # check data series 2
+  t2 <- NULL
+  y2 <- NULL
+  dy2 <- NULL
+  dt2 <- NULL
+  if (!is.null(ts2)) {
+    if (NCOL(ts2) < 2) stop('** Missing columns in ts2.')
+    t2 <- ts2[, 1]
+    y2 <- ts2[, 2]
+    n2 <- length(y2)
+
+    dy2 <- array(0, dim = n)
+    dt2 <- array(0, dim = n)
+    if (NCOL(ts2) > 2) dy2 <- ts2[, 3]
+    if (NCOL(ts2) > 3) dt2 <- ts2[, 4]
+    if (error == FALSE) {
+      dy2 <- 0
+      dt2 <- 0
+    }
+  }
+
   # set ranges
   if (is.null(xlim)) {
     xlim <- range(t)
-    if (!missing(ts2)) xlim <- range(c(xlim, range(ts2$t)))
+    if (!is.null(t2)) xlim <- range(c(t, t2))
   }
   trange <- diff(xlim)
   xlim <- xlim + c(-1, 1) * (extend-1)*trange/2
@@ -229,12 +247,12 @@ plot_ts <- function(ts1, ts2,
   retire <- par(no.readonly = TRUE)
 
   m <- 1
-  if (!missing(ts2)) m <- 2
+  if (!is.null(ts2)) m <- 2
 
   if (add != TRUE) {
     if (split == TRUE) {
       par(mfrow = c(m, 1))
-#      par(mar = c(0, 0, 0, 0), oma = c(5, 5, 0.5, 0.5))
+      #      par(mar = c(0, 0, 0, 0), oma = c(5, 5, 0.5, 0.5))
     }
   }
 
@@ -242,24 +260,21 @@ plot_ts <- function(ts1, ts2,
   if (is.null(ylim)) yfix <- FALSE
   if (yfix != TRUE) {
     if (!missing(ts2) & split != TRUE) {
-      ylim <- range(c(ts1$y, ts2$y))
+      ylim <- range(c(y, y2))
       yfix <- TRUE
     } else {
-      ylim <- range(ts1$y)
+      ylim <- range(y)
     }
   }
 
   for (i in 1:m) {
 
     if (i > 1) {
-      y <- ts2$y
+      y <- y2
+      t <- t2
+      dy <- dy2
+      dt <- dt2
       n <- length(y)
-      t <- 1:n
-      if ("t" %in% colnames(ts2)) t <- ts2$t
-      dy <- array(0, dim = n)
-      if ("dy" %in% colnames(ts2)) dy <- ts2$dy
-      dt <- array(0, dim = n)
-      if ("dt" %in% colnames(ts2)) dt <- ts2$dt
       icol <- icol + 1
     }
 
@@ -277,24 +292,23 @@ plot_ts <- function(ts1, ts2,
       }
     }
 
+    # draw 'horizon' if requested
+    bottom <- NULL
+    if (mode(horizon) == "logical" & horizon == TRUE)
+      bottom <- par("usr")[3]
+    if (mode(horizon) == "numeric")
+      bottom <- horizon
 
-  # draw 'horizon' if requested
-  bottom <- NULL
-  if (mode(horizon) == "logical" & horizon == TRUE)
-    bottom <- par("usr")[3]
-  if (mode(horizon) == "numeric")
-    bottom <- horizon
+    col.fill <- rgb(t(col2rgb(cols[icol])), alpha = 50,
+                    maxColorValue = 255)
 
-  col.fill <- rgb(t(col2rgb(cols[icol])), alpha = 50,
-                  maxColorValue = 255)
+    if (!is.null(bottom)) {
+      pt <- c(t[1], t, t[n])
+      py <- c(bottom, y, bottom)
+      polygon(pt, py, col = col.fill, border = NA)
+    }
 
-  if (!is.null(bottom)) {
-    pt <- c(t[1], t, t[n])
-    py <- c(bottom, y, bottom)
-    polygon(pt, py, col = col.fill, border = NA)
-  }
-
-  # draw points or lines
+    # draw points or lines
     if (type == "p" | type == "b") {
       points(t, y, pch = pch, cex = cex, col = cols[icol])
     }
@@ -302,7 +316,7 @@ plot_ts <- function(ts1, ts2,
       lines(t, y, col = cols[icol], lwd = lwd)
     }
 
-  # include errors [optionally]
+    # include errors [optionally]
     if (error == TRUE) {
       mask <- which(dy > 0)
       segments(t[mask], y[mask]-dy[mask], t[mask], y[mask]+dy[mask],
@@ -319,3 +333,6 @@ plot_ts <- function(ts1, ts2,
   # par(retire)
 
 }
+
+
+
