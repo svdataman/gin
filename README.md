@@ -203,6 +203,8 @@ For more on GPs, the best reference is:
 
 Excellent online resources inclide
 
-[A Visual Exploration of Gaussian Processes](https://www.jgoertler.com/visual-exploration-gaussian-processes/?fbclid=IwAR1JNXE3oo4Y2Z_Ro2jDukKYAQKMXJGJhs13yBBgcJPwbK4lo3v5MbAb9K4)
+[A Visual Exploration of Gaussian Processes](https://www.jgoertler.com/visual-exploration-gaussian-processes/)
+
 [Intuition behind Gaussian Processes](https://sigopt.com/blog/intuition-behind-gaussian-processes)
+
 [Robust Gaussian Process Modeling](https://betanalpha.github.io/assets/case_studies/gaussian_processes.html)
